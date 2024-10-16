@@ -3,15 +3,16 @@ from utils.helpers import *
 
 logger = get_logger(__name__)
 
+CLEADS_URL="https://www.zohoapis.ca/crm/v2/Potential_Carrier"
+
 
 def get_carrier_id(access_token :str, unique_identifier : str, field_name :str):
     """
     unique_identifier : Primary key to search
     field_name : Name of the field to be searched
-
     """
     # API endpoint
-    url = "https://www.zohoapis.ca/crm/v2/Carriers/search"
+    url = "https://www.zohoapis.ca/crm/v2/Carrier/search"
 
     params = {"criteria": f"{field_name}:equals:{unique_identifier}"}
 
@@ -36,46 +37,53 @@ def get_carrier_id(access_token :str, unique_identifier : str, field_name :str):
 
 
 ## batch request
-def add_leads(recommendation_df, job_id, token):
-    url = "https://www.zohoapis.ca/crm/v2/Potential_Carrier"
-
+def add_leads(recom_df, job_id, token, session):
     headers = {
         "Authorization": f"Zoho-oauthtoken {token}",
         "Content-Type": "application/json",
     }
-
     data = []
     success_leads = 0
-
-    for index, row in recommendation_df.iterrows():
-        try:
-            carrier_name = row["Carrier Name"]
-            carrier_id = get_carrier_id(token, carrier_name, "Account_Name")
-
-            if buyer_id:
+    logger.info(f"length of recommendation generated is {len(recom_df)}")
+    if not recom_df.empty:
+        logger.info(f"before adding into zoho {recom_df['Carrier Name'].tolist()}")
+        recom_df["Carrier Name"] = recom_df["Carrier Name"].apply(standardize_name)
+        carrier_names = recom_df["Carrier Name"].tolist()
+        carriers = session.query(Carriers).filter(Carriers.CarrierName.in_(carrier_names)).all()
+        carriers_with_ids = {c.CarrierName: c.ZohoRecordID for c in carriers}
+        logger.info(carriers_with_ids)
+        logger.info(recom_df['Carrier Name'].tolist())
+        for index, row in recom_df.iterrows():
+            try:
+                carrier_name = row["Carrier Name"]
+                Lead_Name = f"{standardize_name(carrier_name)}"
                 lead_data = {
-                    "Carrier":carrier_id,
-                    "Name": job_id + standardize_name(carrier_name),
-                    "Vehicle_State": "Available",
-                    "Carrier_Score": buyer_name, # assing score
-                    "Transport_Job": job_id,
+                    "CarrierID":carriers_with_ids[carrier_name],
+                    "Name": Lead_Name,
+                    "Carrier_Score": row['Lead Score'], # assing score
+                    "Transport_Job_ID": job_id,
                     "Progress_Status": "To Be Contacted"
                 }
                 data.append(lead_data)
+                logger.info(f"data {lead_data}")
                 success_leads += 1
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                logger.error(f"Error Adding/Parsing lead: {e}")
+    else:
+        logger.info(f"No recommendation Found for Job {job_id}")
+        return {"message": f"No recommendation Found for Job {job_id}"}
+
 
     payload = {"data": data}
 
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(CLEADS_URL, headers=headers, json=payload)
     data = response.json()
     try:
         if response.status_code in [200, 201]:
-            print(f"Successfully added {success_leads} leads for Job {job_id}")
+            logger.info(f"Successfully added {success_leads} leads for Job {job_id}")
             for i, lead in enumerate(data["data"]):
                 lead_id = lead["details"]["id"]
-                recommendation_df.loc[i, "Lead_ID"] = lead_id
+                recom_df.loc[i, "Lead_ID"] = lead_id
         else:
             print(f"Failed to add leads for {response.json()}")
 

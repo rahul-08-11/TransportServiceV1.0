@@ -5,4 +5,7 @@
 azure-functions
 azure-functions-durable
 pydantic
-uuid
+pandas
+SQLAlchemy
+pyodbc
+python-dotenv
