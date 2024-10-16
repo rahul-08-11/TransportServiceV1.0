@@ -3,10 +3,10 @@ from src.funcmain import *
 import azure.durable_functions as df
 import pandas as pd
 from azure.storage.blob import BlobServiceClient, BlobClient
-
+import os
 app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 
 # Example usage:
