@@ -18,7 +18,7 @@ token_instance = TokenManager()
 
 async def create_order(body: json) -> dict:
     """ Create an Order in the CRM"""
-    with DatabaseConnection(connection_string=os.getenv("CONN_STR")) as session:
+    with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
         # Create the order ID for new request
         order_id = get_order_id(session)
 
@@ -100,7 +100,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
         logger.info(f"Adding Potential Carriers for {Zoho_Job_ID}")
 
         collective_response = {}
-        with DatabaseConnection(connection_string=os.getenv("CONN_STR")) as session:
+        with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
             try:
                 # check if order entered directly through Zoho
                 if order_id == "-":

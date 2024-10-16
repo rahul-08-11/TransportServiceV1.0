@@ -1,11 +1,8 @@
-# DO NOT include azure-functions-worker in this file
-# The Python Worker is managed by Azure Functions platform
-# Manually managing azure-functions-worker may cause unexpected issues
 
-azure-functions
-azure-functions-durable
-pydantic
-pandas
-SQLAlchemy
-pyodbc
-python-dotenv
+azure-functions==1.21.1
+azure-functions-durable==1.2.9
+azure-storage-blob==12.23.1
+pandas==2.2.3
+python-dotenv==1.0.1
+SQLAlchemy==2.0.35
+pydantic==2.9.2
