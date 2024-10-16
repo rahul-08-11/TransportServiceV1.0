@@ -7,8 +7,8 @@ import json
 import pandas as pd
 import os
 # # Load Env Variables
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 logger = get_logger(__name__)
 
