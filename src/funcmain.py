@@ -106,14 +106,25 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                     
 
                     await update_order({"id": Zoho_Job_ID, "Name": order_id})
+
+                    try:
+                        customer_body = body.get("Customer","")
+                        customer_id = customer_body['id']
+                        customer_name = customer_body['name']
+                    except Exception as e:
+                        customer_name = 'n/a'
+                        customer_id = 'n/a'
+                        logger.error(f"Func Main  Error: {e}")
+
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID
-                        TransportRequestID=id,  # Add a comma here
-                        CustomerID=customer_body['id'],
-                        CustomerName=customer_body['Name']
+                        TransportRequestID=Zoho_Job_ID,  # Add a comma here
+                        CustomerID=customer_id,
+                        CustomerName=customer_name
                     )
                     session.add(dbobj)
                     session.commit()
+                    logger.info("commited successfully")
             except Exception as e:
                 logger.error(f"Func Main  Error: {e}")
                 
