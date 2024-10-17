@@ -32,7 +32,7 @@ blob_service_client = BlobServiceClient.from_connection_string(os.getenv("BLOB_C
 
     # Create an empty DataFrame with the defined columns
 # carrierT = pd.DataFrame(columns=columns)
-carrierT = pd.read_csv("carriersT.csv")
+carrierT = pd.read_csv("CarriersT.csv")
 
 logger = get_logger(__name__)
 
