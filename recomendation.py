@@ -16,20 +16,26 @@ def transport_eff_m(avg_day, max_day, min_day,count_requests):
             return teff*0.3
         return teff
 
-def cost_eff_m(estimated_cost, max_cost, min_cost):
-    if pd.isna(estimated_cost):
+def cost_eff_m(estimated_cost, max_cost, min_cost, count_requests):
+    if pd.isna(estimated_cost) or pd.isna(count_requests ):
         return 0
     elif min_cost == max_cost and isinstance(estimated_cost, float):
         return 5  # Neutral score if all values are the same
     else:
-        # Calculate the raw cost efficiency score without scaling factor
-        raw_cost_eff = max(0, 10 - (estimated_cost / max_cost) * 10)  # Avoid negative scores
+        # Calculate the scaling factor to reduce the impact of low request counts
+        scaling_factor = 1 - round(1 / (1 + round(np.exp(-(count_requests - 10)))), 3)  # low request counts
 
-        return max(0, raw_cost_eff)  # Ensure the score is not negative
+        # Calculate the raw cost efficiency score
+        raw_cost_eff = max(0, 5 - (estimated_cost / max_cost) * 5)  # Avoid negative scores
+
+        # Adjust the cost efficiency score based on the scaling factor
+        adjusted_cost_eff = raw_cost_eff - raw_cost_eff * scaling_factor
+
+        return max(0, adjusted_cost_eff)  # Ensure the score is not negative
 
 
 def reliability_m(on_time, late_delivery, count_requests):
-      if (on_time + late_delivery) == 0 or pd.isna(late_delivery) or pd.isna(on_time):
+      if (on_time + late_delivery) == 0:
           return 0  # No data for reliability
       raw_reliability = (on_time / (on_time + late_delivery)*5) # 0 - 1
 
@@ -39,9 +45,9 @@ def reliability_m(on_time, late_delivery, count_requests):
 
 
 def categorize_intensity(score_value : float) -> str:
-    if score_value >= 14:
+    if score_value > 10:
         return "Hot"
-    elif score_value >= 7 and score_value <= 13:
+    elif score_value > 5 and score_value <= 10:
         return "Warm"
     else:
         return "Cold"
@@ -78,7 +84,7 @@ def recommend_carriers(carrierT, pickup_city, destination_city):
         lambda row: cost_eff_m(row['Estimated Amount'],
                                 max_cost=recommended_carriers['Estimated Amount'].max(),
                                 min_cost=recommended_carriers['Estimated Amount'].min(),
-                ),
+                                count_requests = row['CountRequest']),
         axis=1
     )
 
