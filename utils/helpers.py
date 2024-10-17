@@ -67,7 +67,7 @@ class DatabaseConnection:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            logging.error(f"Error occurred: {exc_val}")
+            logging.error(f"Database error occurred: {exc_val}")
             if self.session:
                 self.session.rollback()
         if self.session:
