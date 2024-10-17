@@ -17,6 +17,8 @@ app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 # Example usage:
 blob_service_client = BlobServiceClient.from_connection_string(os.getenv("BLOB_CONN_STR"))
 
+carrierT = ''
+
 logger = get_logger(__name__)
 
 
