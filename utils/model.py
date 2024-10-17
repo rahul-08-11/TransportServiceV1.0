@@ -26,4 +26,3 @@ class Clead(BaseModel):
     Pickup_Location : Optional[str] = None
     Dropoff_Location : Optional[str] = None
     Vehicle_Details : Optional[dict] = None
-    Estimated_Amount : Optional[str] = None   

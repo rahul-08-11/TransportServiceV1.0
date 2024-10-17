@@ -6,7 +6,7 @@ from recomendation import recommend_carriers
 import json
 import pandas as pd
 import os
-# # Load Env Variables
+# # # Load Env Variables
 # from dotenv import load_dotenv
 # load_dotenv()
 
@@ -97,6 +97,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
 
         collective_response = {}
         with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
+            logger.info(f"DB Connection established")
             try:
                 # check if order entered directly through Zoho
                 if order_id == "-":
@@ -118,8 +119,8 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                 
             for i, vehicle in enumerate(body['Vehicle_Details']):
                 logger.info(vehicle)
-                pickup_location = vehicle.get('Pick_up_location', 'n/a')
-                dropoff_location = vehicle.get('Drop_off_location', 'n/a')
+                pickup_location = body.get('pickuploc', 'n/a')
+                dropoff_location = body.get('dropoffloc', 'n/a')
                 recommendation_df = recommend_carriers(carrierT, pickup_location, dropoff_location)
                
                 response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,session)

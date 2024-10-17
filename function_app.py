@@ -6,7 +6,8 @@ from azure.storage.blob import BlobServiceClient, BlobClient
 import os
 from io import StringIO
 
-app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+# app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 # from dotenv import load_dotenv
 # load_dotenv()
 
@@ -37,90 +38,90 @@ carrierT = pd.read_csv("CarriersT.csv")
 logger = get_logger(__name__)
 
 
-# HTTP-triggered function with a Durable Functions client binding
-@app.route(route="orchestrators/{functionName}")
-@app.durable_client_input(client_name="client")
-async def http_start(req: func.HttpRequest, client):
-    function_name = req.route_params.get('functionName')
+# # HTTP-triggered function with a Durable Functions client binding
+# @app.route(route="orchestrators/{functionName}")
+# @app.durable_client_input(client_name="client")
+# async def http_start(req: func.HttpRequest, client):
+#     function_name = req.route_params.get('functionName')
 
-    details = {
-        "ContainerName":"carriersfiles",
-        "blobName":"CarriersT.csv",
-        "Location":"carriersBlob.csv"
-    }
+#     details = {
+#         "ContainerName":"carriersfiles",
+#         "blobName":"CarriersT.csv",
+#         "Location":"carriersBlob.csv"
+#     }
 
-    try:
-        # Check if there's already a running instance
-        existing_instances = await client.get_status_all()
-        for instance in existing_instances:
-            if instance.runtime_status == "Running":
-                # Terminate the running instance
-                await client.terminate(instance.instance_id, "Stopping previous instance to start a new one.")
+#     try:
+#         # Check if there's already a running instance
+#         existing_instances = await client.get_status_all()
+#         for instance in existing_instances:
+#             if instance.runtime_status == "Running":
+#                 # Terminate the running instance
+#                 await client.terminate(instance.instance_id, "Stopping previous instance to start a new one.")
 
-        # Start a new orchestration instance
-        instance_id = await client.start_new(function_name, None,details)
+#         # Start a new orchestration instance
+#         instance_id = await client.start_new(function_name, None,details)
 
-        return func.HttpResponse(f"Orchestration Instance started: {instance_id}")
+#         return func.HttpResponse(f"Orchestration Instance started: {instance_id}")
     
-    except Exception as e:
-        logging.error(f"Failed to start orchestration: {e}")
-        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+#     except Exception as e:
+#         logging.error(f"Failed to start orchestration: {e}")
+#         return func.HttpResponse(f"Error: {str(e)}", status_code=500)
 
-# Orchestrator
-@app.orchestration_trigger(context_name="context")
-def Order_orchestrator(context):
-    details = context.get_input()
-    yield context.call_activity("fetch_carrierT_activity",details)
-    return ['Completed']
+# # Orchestrator
+# @app.orchestration_trigger(context_name="context")
+# def Order_orchestrator(context):
+#     details = context.get_input()
+#     yield context.call_activity("fetch_carrierT_activity",details)
+#     return ['Completed']
 
 
 
-@app.activity_trigger(input_name="details")
-def fetch_carrierT_activity(details: dict):
-    global carrierT
-    logging.info(f"Activity 'fetch_carrier_activity' triggered with details: {details}")
+# @app.activity_trigger(input_name="details")
+# def fetch_carrierT_activity(details: dict):
+#     global carrierT
+#     logging.info(f"Activity 'fetch_carrier_activity' triggered with details: {details}")
 
-    # Create a BlobClient
-    blob_client = blob_service_client.get_blob_client(container=details['ContainerName'], blob=details['blobName'])
+#     # Create a BlobClient
+#     blob_client = blob_service_client.get_blob_client(container=details['ContainerName'], blob=details['blobName'])
     
-    # Get blob properties
-    props = blob_client.get_blob_properties()
-    blob_size = props.size
-    chunk_size = 256 * 1024  # 256 KB chunk size
-    index = 0
+#     # Get blob properties
+#     props = blob_client.get_blob_properties()
+#     blob_size = props.size
+#     chunk_size = 256 * 1024  # 256 KB chunk size
+#     index = 0
     
 
-    while index < blob_size:
-        range_start = index
-        range_end = min(index + chunk_size - 1, blob_size - 1)
+#     while index < blob_size:
+#         range_start = index
+#         range_end = min(index + chunk_size - 1, blob_size - 1)
         
-        # Download in chunks
-        data = blob_client.download_blob(offset=range_start, length=chunk_size).readall()
-        length = len(data)
-        index += length
+#         # Download in chunks
+#         data = blob_client.download_blob(offset=range_start, length=chunk_size).readall()
+#         length = len(data)
+#         index += length
         
-        logging.info(f"Index is {index}")
+#         logging.info(f"Index is {index}")
 
-        if length > 0:
-            # Convert the data to a string
-            data_str = data.decode('utf-8')  # Decode bytes to string
+#         if length > 0:
+#             # Convert the data to a string
+#             data_str = data.decode('utf-8')  # Decode bytes to string
             
-            # Read the chunk into a DataFrame
-            chunk_df = pd.read_csv(StringIO(data_str), names=columns, header=None, skiprows=1)  # Adjust according to your blob's format
+#             # Read the chunk into a DataFrame
+#             chunk_df = pd.read_csv(StringIO(data_str), names=columns, header=None, skiprows=1)  # Adjust according to your blob's format
             
-            # Append the new data to the existing DataFrame
-            carrierT = pd.concat([carrierT, chunk_df], ignore_index=True)
+#             # Append the new data to the existing DataFrame
+#             carrierT = pd.concat([carrierT, chunk_df], ignore_index=True)
             
-            if length < chunk_size:
-                break
-        else:
-            break
+#             if length < chunk_size:
+#                 break
+#         else:
+#             break
 
-    # Optionally return or process the DataFrame as needed
-    # For example, you could return the DataFrame info or save it to a database
-    logging.info(f"DataFrame shape after appending: {carrierT.shape}")
-    logger.info(carrierT)
-    return f"DataFrame created with {carrierT.columns} rows."
+#     # Optionally return or process the DataFrame as needed
+#     # For example, you could return the DataFrame info or save it to a database
+#     logging.info(f"DataFrame shape after appending: {carrierT.shape}")
+#     logger.info(carrierT)
+#     return f"DataFrame created with {carrierT.columns} rows."
 
 
 
