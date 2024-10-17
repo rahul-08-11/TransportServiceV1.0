@@ -122,7 +122,6 @@ def fetch_carrierT_activity(details: dict):
     # Optionally return or process the DataFrame as needed
     # For example, you could return the DataFrame info or save it to a database
     logging.info(f"DataFrame shape after appending: {carrierT.shape}")
-    carrierT.to_csv("test.csv")
     logger.info(carrierT)
     return f"DataFrame created with {carrierT.columns} rows."
 
