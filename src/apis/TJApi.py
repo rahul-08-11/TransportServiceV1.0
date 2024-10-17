@@ -126,9 +126,9 @@ def update_order(updated_data : dict, token : str) -> dict:
         "Content-Type": "application/json",
     }
 
-    order_id = updated_data['id'] 
+    job_id = updated_data['id'] 
     try:
-        if not order_id:
+        if not job_id:
             logger.info(f"Order ID not found")
 
             return {"message": "order ID not found in request body"}
@@ -137,7 +137,7 @@ def update_order(updated_data : dict, token : str) -> dict:
             response = requests.patch(MODULE_URL, headers=headers, json=payload)
 
             if response.status_code == 200:
-                logger.info(f"Successfully updated Order Job : {order_id}")
+                logger.info(f"Successfully updated Order Job : {job_id}")
             
             else:
                 logger.error(f"Failed to update Order for {response.json()}")

@@ -105,7 +105,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                     customer_body = body.get("Customer","")
                     
 
-                    await update_order({"id": order_id})
+                    await update_order({"id": Zoho_Job_ID, "Name": order_id})
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID
                         TransportRequestID=id,  # Add a comma here
