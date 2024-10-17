@@ -96,8 +96,12 @@ def add_order(order_data : dict, token : str, release_forms : list) -> dict:
             if response.status_code == 201:
                 order_id =  response.json()["data"][0]["details"]["id"]
                 logger.info(f"Successfully added Order Job : {order_id}")
-                document_response = attach_release_form(token, order_id, release_forms)
-                logger.info(f"Document Attachment response : {document_response}")
+                try:
+                        
+                    document_response = attach_release_form(token, order_id, release_forms)
+                    logger.info(f"Document Attachment response : {document_response}")
+                except Exception as e:
+                    logger.warning(f"Document Attachment error : {e}")
                 
             else:
                 logger.error(f"Failed to add Order for {response.json()}")

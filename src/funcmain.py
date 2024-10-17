@@ -23,26 +23,22 @@ async def create_order(body: json) -> dict:
         order_id = get_order_id(session)
 
         try:
-            release_forms = body.get("release_form","")
-            logger.info(f"release_form : {release_forms}")
+
+            try:
+                release_forms = body.get("release_form","")
+                logger.info(f"release_form : {release_forms}")
+            except Exception as e:
+                logger.error(f"Func Main  Error: {e}")
 
             OrderObj = Order(
                 Name=order_id,
                 Customer_id = body.get("Customer_id",""),
                 Customer_Name = body.get("Customer_Name",""),
-                Actual_Dropoff_Time = body.get("Actual_Dropoff_Time",""),
-                Actual_Pickup_Time = body.get("Actual_Pickup_Time",""),
                 Dropoff_Location = body.get("Dropoff_Location",""),
-                Email = body.get("Email",""),
-                Job_Price = body.get("Job_Price",""),
                 Order_ID = body.get("Order_ID",""),
-                Payment_Status = body.get("Payment_Status",""),
                 Pickup_Location = body.get("Pickup_Location",""),
-                Scheduled_Dropoff_Time = body.get("Scheduled_Dropoff_Time",""),
-                Scheduled_Pickup_Time = body.get("Scheduled_Pickup_Time",""),
-                Shipment_Status = body.get("Shipment_Status",""),
                 Vehicle_Details = body.get("Vehicle_Details",[{}]),
-            
+                Customer_Notes = body.get("Customer_Notes","")
             )
 
             token = token_instance.get_access_token()

@@ -13,25 +13,26 @@ app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 # Example usage:
 blob_service_client = BlobServiceClient.from_connection_string(os.getenv("BLOB_CONN_STR"))
       # Define the DataFrame columns
-columns = [
-        "Carrier Name",
-        "Pickup City",
-        "Pickup State/Province",
-        "Pickup Country",
-        "Destination City",
-        "Destination State/Province",
-        "Destination Country",
-        "Transport Requests",
-        "Avg. Cost Per Km",
-        "Estimated Amount",
-        "Avg. Delivery Day",
-        "On-time",
-        "Late Delivery",
-        "CountRequest"
-    ]
+# columns = [
+#         "Carrier Name",
+#         "Pickup City",
+#         "Pickup State/Province",
+#         "Pickup Country",
+#         "Destination City",
+#         "Destination State/Province",
+#         "Destination Country",
+#         "Transport Requests",
+#         "Avg. Cost Per Km",
+#         "Estimated Amount",
+#         "Avg. Delivery Day",
+#         "On-time",
+#         "Late Delivery",
+#         "CountRequest"
+#     ]
 
     # Create an empty DataFrame with the defined columns
-carrierT = pd.DataFrame(columns=columns)
+# carrierT = pd.DataFrame(columns=columns)
+carrierT = pd.read_csv("carriersT.csv")
 
 logger = get_logger(__name__)
 

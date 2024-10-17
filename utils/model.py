@@ -6,19 +6,15 @@ class Order(BaseModel):
     OrderID : Optional[str] = None
     Customer_id : Optional[str] = None
     Customer_Name: Optional[str] = None
-    Actual_Dropoff_Time : Optional[str] = None
-    Actual_Pickup_Time	:Optional[str] = None
     Dropoff_Location : Optional[str] = None
-    Email : Optional[str] = None
-    Job_Price : Optional[str] = None
     Order_ID : Optional[str] = None
-    Payment_Status : Optional[str] = None
     Pickup_Location : Optional[str] = None
-    Scheduled_Dropoff_Time : Optional[str] = None
-    Scheduled_Pickup_Time : Optional[str] = None
-    Shipment_Status : Optional[str] = None
+    Shipment_Status : Optional[str] = "Pending"
+    carrier_paid_status	: Optional[str] = "Unpaid"
+    customer_paid_status : Optional[str] = "Unpaid"
     Name : Optional[str] = None
     Vehicle_Details : Optional[list] = None
+    Customer_Notes : Optional[str] = None
 
 
 
@@ -30,3 +26,4 @@ class Clead(BaseModel):
     Pickup_Location : Optional[str] = None
     Dropoff_Location : Optional[str] = None
     Vehicle_Details : Optional[dict] = None
+    Estimated_Amount : Optional[str] = None   
