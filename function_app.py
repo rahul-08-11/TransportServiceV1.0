@@ -4,7 +4,12 @@ import azure.durable_functions as df
 import pandas as pd
 from azure.storage.blob import BlobServiceClient, BlobClient
 import os
+from io import StringIO
+
 app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+
+
+
 # from dotenv import load_dotenv
 # load_dotenv()
 
@@ -49,54 +54,78 @@ async def http_start(req: func.HttpRequest, client):
 def Order_orchestrator(context):
     details = context.get_input()
     yield context.call_activity("fetch_carrierT_activity",details)
-    yield context.call_activity("store_carrier_activity",details)
     return ['Completed']
 
 
 
-
-# Activity functions
 @app.activity_trigger(input_name="details")
 def fetch_carrierT_activity(details: dict):
+    global carrierT
     logging.info(f"Activity 'fetch_carrier_activity' triggered with details: {details}")
 
-        # Create a BlobClient
+    # Create a BlobClient
     blob_client = blob_service_client.get_blob_client(container=details['ContainerName'], blob=details['blobName'])
     
     # Get blob properties
-    props = blob_client.get_blob_properties()  # Use BlobClient here
-    blob_size = props.size  # Access size from the properties
-    chunk_size = 256 * 1024   # 64 KB chunk size
+    props = blob_client.get_blob_properties()
+    blob_size = props.size
+    chunk_size = 256 * 1024  # 256 KB chunk size
     index = 0
+    
+       # Define the DataFrame columns
+    columns = [
+        "Carrier Name",
+        "Pickup City",
+        "Pickup State/Province",
+        "Pickup Country",
+        "Destination City",
+        "Destination State/Province",
+        "Destination Country",
+        "Transport Requests",
+        "Avg. Cost Per Km",
+        "Estimated Amount",
+        "Avg. Delivery Day",
+        "On-time",
+        "Late Delivery",
+        "CountRequest"
+    ]
 
-    with open(details['Location'], 'wb') as f:
-        while index < blob_size:
-            range_start = index
-            range_end = min(index + chunk_size - 1, blob_size - 1)
-            range_header = f'bytes={range_start}-{range_end}'
-            data = blob_client.download_blob(offset=range_start, length=chunk_size).readall()  # Download in chunks
+    # Create an empty DataFrame with the defined columns
+    carrierT = pd.DataFrame(columns=columns)
+
+    while index < blob_size:
+        range_start = index
+        range_end = min(index + chunk_size - 1, blob_size - 1)
+        
+        # Download in chunks
+        data = blob_client.download_blob(offset=range_start, length=chunk_size).readall()
+        length = len(data)
+        index += length
+        
+        logging.info(f"Index is {index}")
+
+        if length > 0:
+            # Convert the data to a string
+            data_str = data.decode('utf-8')  # Decode bytes to string
             
-            length = len(data)
-            index += length
-            logger.info(f"index is {index}")
+            # Read the chunk into a DataFrame
+            chunk_df = pd.read_csv(StringIO(data_str), names=columns, header=None, skiprows=1)  # Adjust according to your blob's format
             
-            if length > 0:
-                f.write(data)
-                if length < chunk_size:
-                    break
-            else:
+            # Append the new data to the existing DataFrame
+            carrierT = pd.concat([carrierT, chunk_df], ignore_index=True)
+            
+            if length < chunk_size:
                 break
-    return f"{index}"
+        else:
+            break
 
+    # Optionally return or process the DataFrame as needed
+    # For example, you could return the DataFrame info or save it to a database
+    logging.info(f"DataFrame shape after appending: {carrierT.shape}")
+    carrierT.to_csv("test.csv")
+    logger.info(carrierT)
+    return f"DataFrame created with {carrierT.columns} rows."
 
-
-
-@app.activity_trigger(input_name="details")
-def store_carrier_activity(details: dict):
-    global carrierT
-    carrierT = pd.read_csv(details["Location"])
-    logging.info(f"Stored carrierT : {len(carrierT)}")
-    return f"Length of carrierT: {len(carrierT)}"
 
 
 @app.route(route="ping", methods=['GET'])
@@ -148,7 +177,7 @@ async def CarrierLead(req: func.HttpRequest) -> func.HttpResponse:
         response = await create_potential_carrier(body,carrierT)
 
         logger.info(f"Func app :{response}")
-        return func.HttpResponse(json.dumps("TEST"), status_code=200)
+        return func.HttpResponse(json.dumps(response), status_code=200)
 
     except Exception as e:
         logger.error(f"Error processing request: {str(e)}")

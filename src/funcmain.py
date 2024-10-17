@@ -129,7 +129,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                 response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,session)
                 
                 collective_response[f"Vehicle {i+1}"] = response
-            return json.dumps(collective_response)
+            return collective_response
         
     except Exception as e:
         logger.error(f"Func Main  Error: {e}")
