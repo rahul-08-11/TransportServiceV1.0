@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import requests
 import os
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 class TokenManager:
     _token = None
     _expiry = None
