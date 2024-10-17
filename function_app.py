@@ -7,17 +7,31 @@ import os
 from io import StringIO
 
 app = df.DFApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-
-
-
 # from dotenv import load_dotenv
 # load_dotenv()
 
-
 # Example usage:
 blob_service_client = BlobServiceClient.from_connection_string(os.getenv("BLOB_CONN_STR"))
+      # Define the DataFrame columns
+columns = [
+        "Carrier Name",
+        "Pickup City",
+        "Pickup State/Province",
+        "Pickup Country",
+        "Destination City",
+        "Destination State/Province",
+        "Destination Country",
+        "Transport Requests",
+        "Avg. Cost Per Km",
+        "Estimated Amount",
+        "Avg. Delivery Day",
+        "On-time",
+        "Late Delivery",
+        "CountRequest"
+    ]
 
-carrierT = ''
+    # Create an empty DataFrame with the defined columns
+carrierT = pd.DataFrame(columns=columns)
 
 logger = get_logger(__name__)
 
@@ -74,26 +88,6 @@ def fetch_carrierT_activity(details: dict):
     chunk_size = 256 * 1024  # 256 KB chunk size
     index = 0
     
-       # Define the DataFrame columns
-    columns = [
-        "Carrier Name",
-        "Pickup City",
-        "Pickup State/Province",
-        "Pickup Country",
-        "Destination City",
-        "Destination State/Province",
-        "Destination Country",
-        "Transport Requests",
-        "Avg. Cost Per Km",
-        "Estimated Amount",
-        "Avg. Delivery Day",
-        "On-time",
-        "Late Delivery",
-        "CountRequest"
-    ]
-
-    # Create an empty DataFrame with the defined columns
-    carrierT = pd.DataFrame(columns=columns)
 
     while index < blob_size:
         range_start = index
