@@ -44,10 +44,18 @@ async def create_order(body: json) -> dict:
                     OrderID = Id,
                     Pickup_Location = order.get("Pickup_Location",""),
                     Vehicle_Details = order.get("Vehicle_Details",[{}]),
-                    Customer_Notes = order.get("Customer_Notes","")
+                    Customer_Notes = order.get("Customer_Notes",""),
+                    Vehicle_Subform = [{
+                        "Year":order.get("Year",''),
+                        "Make":order.get("Make",''),
+                        "Model":order.get("Model",''),
+                        "Trim":order.get("Trim",''),
+                        "VIN":order.get("VIN",'')
+                    }]
                 )
 
                 token = token_instance.get_access_token()
+                print(dict(OrderObj))
                 response = TJApi.add_order(dict(OrderObj), token, release_forms)
 
                 try:
