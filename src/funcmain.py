@@ -119,7 +119,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
             try:
                 # check if order entered directly through Zoho
                 if order_id == "-":
-                    order_id = get_order_id(session)
+                    order_id = f"{get_order_id(session)}"
                     customer_body = body.get("Customer","")
 
                     try:
@@ -130,8 +130,9 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                         customer_name = 'n/a'
                         customer_id = 'n/a'
                         logger.error(f"Func Main  Error: {e}")
-                    deal_name = f"{customer_name} - #{order_id}"
-                    await update_order({"id": Zoho_Job_ID, "Name": order_id,"Deal_Name": deal_name})
+
+                    deal_name = f"{customer_name} - {order_id}"
+                    await update_order({"id": Zoho_Job_ID, "OrderID": order_id,"Deal_Name": deal_name})
 
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID
