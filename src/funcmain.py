@@ -121,9 +121,6 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                 if order_id == "-":
                     order_id = get_order_id(session)
                     customer_body = body.get("Customer","")
-                    
-
-                    await update_order({"id": Zoho_Job_ID, "Name": order_id})
 
                     try:
                         customer_body = body.get("Customer","")
@@ -133,6 +130,8 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                         customer_name = 'n/a'
                         customer_id = 'n/a'
                         logger.error(f"Func Main  Error: {e}")
+                    deal_name = f"{customer_name} - #{order_id}"
+                    await update_order({"id": Zoho_Job_ID, "Name": order_id,"Deal_Name": deal_name})
 
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID
