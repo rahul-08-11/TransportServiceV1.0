@@ -93,7 +93,17 @@ class OrdersDB(Base):
     CustomerID = Column(String(255), nullable=True)
     CustomerName = Column(String(255), nullable=True)
     CreateTime = Column(DateTime, default=sqlfunc.now(), nullable=False)
-
+    EstimatedPickupTime = Column(String(255), nullable=True)
+    EstimatedDropoffTime = Column(String(255), nullable=True)
+    JobPrice = Column(String(255), nullable=True)
+    CarrierCost = Column(String(255), nullable=True)
+    Status = Column(String(255), nullable=True)
+    PickupLocation = Column(String(255), nullable=True)
+    DropoffLocation = Column(String(255), nullable=True)
+    ActualPickupTime = Column(DateTime, nullable=True)
+    ActualDeliveryTime = Column(DateTime, nullable=True)
+    CarrierName = Column(String(255), nullable=True)
+    CarrierID = Column(String(255), nullable=True)
     # Define a relationship to TransportQuotation
     quotations = relationship("TransportQuotation", back_populates="order")
 
@@ -103,17 +113,13 @@ class TransportQuotation(Base):
     
     # Define both columns as part of the composite primary key
     TransportRequestID = Column(String(255), ForeignKey('TransportOrders.TransportRequestID'), nullable=False)
+    CreateTime = Column(DateTime, default=sqlfunc.now(), nullable=False)
     CarrierName = Column(String(255), nullable=False)
-
     DropoffLocation = Column(String(255), nullable=True)
     PickupLocation = Column(String(255), nullable=True)
-    ActualPickupTime = Column(DateTime, nullable=True)
-    ActualDropoffTime = Column(DateTime, nullable=True)
-    EstimatedPickupTime = Column(DateTime, nullable=True)
-    EstimatedDropoffTime = Column(DateTime, nullable=True)
-    Price_Quotes = Column(String(255), nullable=True)
-    Notes = Column(String(255), nullable=True)
-
+    EstimatedPickupTime = Column(String(255), nullable=True)
+    EstimatedDropoffTime = Column(String(255), nullable=True)
+    Estimated_Amount = Column(String(255), nullable=True)
     # Define a composite primary key
     __table_args__ = (
         PrimaryKeyConstraint('TransportRequestID', 'CarrierName'),
@@ -123,9 +129,7 @@ class TransportQuotation(Base):
     order = relationship("OrdersDB", back_populates="quotations")
 
 
-
-
-def get_order_id(session):
+def get_order_id(session) -> int:
     # Query to fetch the maximum OrderID
     last_order = session.query(sqlfunc.max(OrdersDB.OrderID)).scalar()
     last_id = last_order if last_order is not None else None
@@ -142,5 +146,4 @@ def get_order_id(session):
     else:
         order_id = 1 + result
 
-    order_id = f"#{order_id}"
     return order_id

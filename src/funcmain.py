@@ -23,42 +23,52 @@ async def create_order(body: json) -> dict:
         order_id = get_order_id(session)
 
         try:
+            orders_list = body.get("Orders",[{}])
 
-            try:
-                release_forms = body.get("release_form","")
-                logger.info(f"release_form : {release_forms}")
-            except Exception as e:
-                logger.error(f"Func Main  Error: {e}")
+            for i, order in enumerate(orders_list):
+                Id =f"#{order_id + i}" 
+                try:
+                    release_forms = order.get("release_form","")
+                    logger.info(f"release_form : {release_forms}")
+                except Exception as e:
+                    logger.error(f"Func Main  Error: {e}")
 
-            OrderObj = Order(
-                Name=order_id,
-                Customer_id = body.get("Customer_id",""),
-                Customer_Name = body.get("Customer_Name",""),
-                Dropoff_Location = body.get("Dropoff_Location",""),
-                Order_ID = body.get("Order_ID",""),
-                Pickup_Location = body.get("Pickup_Location",""),
-                Vehicle_Details = body.get("Vehicle_Details",[{}]),
-                Customer_Notes = body.get("Customer_Notes","")
-            )
+                # format deal name 
+                customer_name = body.get("Customer_name","")
 
-            token = token_instance.get_access_token()
-            response = TJApi.add_order(dict(OrderObj), token, release_forms)
-
-            try:
-                id = response["data"][0]["details"]["id"]
-
-                dbobj = OrdersDB(
-                    OrderID=order_id,  # Set the OrderID
-                    TransportRequestID=id,  # Add a comma here
-                    CustomerID=OrderObj.Customer_id,
-                    CustomerName=OrderObj.Customer_Name
+                OrderObj = Order(
+                    Deal_Name=f"{customer_name} - {Id}",
+                    Customer_id = body.get("Customer_id",""),
+                    Customer_Name =customer_name,
+                    Dropoff_Location = order.get("Dropoff_Location",""),
+                    OrderID = Id,
+                    Pickup_Location = order.get("Pickup_Location",""),
+                    Vehicle_Details = order.get("Vehicle_Details",[{}]),
+                    Customer_Notes = order.get("Customer_Notes","")
                 )
-                session.add(dbobj)
-                session.commit()
 
-            except Exception as e:
-                logger.error(f"Func Main  Error: {e}")
-                
+                token = token_instance.get_access_token()
+                response = TJApi.add_order(dict(OrderObj), token, release_forms)
+
+                try:
+                    job_id = response["data"][0]["details"]["id"]
+
+                    dbobj = OrdersDB(
+                        OrderID=Id,  # Set the OrderID
+                        TransportRequestID=job_id,  # Add a comma here
+                        CustomerID=OrderObj.Customer_id,
+                        CustomerName=OrderObj.Customer_Name,
+                        Status="Pending",
+                        PickupLocation=OrderObj.Pickup_Location,
+                        DropoffLocation=OrderObj.Dropoff_Location,
+
+                    )
+                    session.add(dbobj)
+                    session.commit()
+
+                except Exception as e:
+                    logger.error(f"Func Main  Error: {e}")
+                    
             logger.info(f"Response Received : {response}")
 
             return response
@@ -94,7 +104,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
         Zoho_Job_ID=body.get("Zoho_Job_ID","")
         order_id = body.get("order_id","-")
         logger.info(f"Adding Potential Carriers for {Zoho_Job_ID}")
-
+        
         collective_response = {}
         with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
             logger.info(f"DB Connection established")
@@ -128,19 +138,44 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
             except Exception as e:
                 logger.error(f"Func Main  Error: {e}")
                 
-            for i, vehicle in enumerate(body['Vehicle_Details']):
-                logger.info(vehicle)
-                pickup_location = body.get('pickuploc', 'n/a')
-                dropoff_location = body.get('dropoffloc', 'n/a')
-                recommendation_df = recommend_carriers(carrierT, pickup_location, dropoff_location)
-               
-                response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,session)
-                
-                collective_response[f"Vehicle {i+1}"] = response
-            return collective_response
+            
+            pickup_location = body.get('pickuploc', 'n/a')
+            dropoff_location = body.get('dropoffloc', 'n/a')
+            recommendation_df = recommend_carriers(carrierT, pickup_location, dropoff_location)
+            
+            response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,session)
+            
+            return response
         
     except Exception as e:
         logger.error(f"Func Main  Error: {e}")
         return {
             "error": str(e)
         }
+    
+
+
+async def quotes_operation(body : dict) -> func.HttpResponse:
+    """ Handle quotes operations"""
+    
+    try:
+# 
+        with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
+            logger.info(f"DB Connection established")
+            try:
+                quote = TransportQuotation(
+                    TransportRequestID=body.get("TransportRequestID","-"),
+                    CarrierName=body.get("CarrierName","-"),
+                    DropoffLocation=body.get("DropoffLocation","-"), 
+                    PickupLocation=body.get("PickupLocation","-"),
+                    EstimatedPickupTime=body.get("EstimatedPickupTime","-"),
+                    EstimatedDropoffTime=body.get("EstimatedDropoffTime","-"),
+                    Estimated_Amount=body.get("Estimated_Amount","-")
+                )
+                session.add(quote)
+                session.commit()
+            except Exception as e:
+                logger.error(f"Func Main  Error: {e}")
+
+    except Exception as e:
+        logger.error(f"Func Main  Error: {e}")

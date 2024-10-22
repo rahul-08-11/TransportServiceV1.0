@@ -3,7 +3,7 @@ from utils.helpers import *
 
 logger = get_logger(__name__)
 
-MODULE_URL = "https://www.zohoapis.ca/crm/v2/Transport_Job"
+MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
 def attach_release_form(token : str,  zoho_job_id : str, release_forms : list) -> dict:
     # Prepare the headers
@@ -62,30 +62,32 @@ def get_zoho_id(access_token :str, unique_identifier : str, field_name :str , mo
 
 
 def add_order(order_data : dict, token : str, release_forms : list) -> dict:
-
     try:
-
         headers = {
             "Authorization": f"Zoho-oauthtoken {token}",
             "Content-Type": "application/json",
         }
 
-        # customer_id = order_data['Customer_id']
+        customer_id = order_data['Customer_id']
 
         try:
-            pass
-            # if not customer_id:
-            #     logger.info(f"Customer ID not found : Searching by CustomerName : {order_data['Customer_Name']}")
-            #     customer_id = get_zoho_id(access_token=token, unique_identifier=order_data['Customer_Name'], field_name="Account_Name",module_name="Accoutns")
+            if not customer_id:
+                logger.info(f"Customer ID not found : Searching by CustomerName : {order_data['Customer_Name']}")
+                customer_id = get_zoho_id(access_token=token, unique_identifier=order_data['Customer_Name'], field_name="Account_Name",module_name="Accoutns")
                
-            #     if customer_id:
-            #         logger.info(f"Customer ID found : {customer_id}")
-            #         order_data['Customer_id'] = customer_id
+                if customer_id:
+                    logger.info(f"Customer ID found : {customer_id}")
+                    order_data['Customer_id'] = customer_id
 
 
         except Exception as e:
             logger.warning(f"Customer ID or Searched Name not found: {e}")
 
+        order_data['Layout'] =  {
+                "name":"Transport Job",
+                "id": "3384000001562002"
+            }
+        
         payload = {"data": [order_data]}
 
         response = requests.post(MODULE_URL, headers=headers, json=payload)

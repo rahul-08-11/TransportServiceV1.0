@@ -3,17 +3,17 @@ from typing import Optional
 
 
 class Order(BaseModel):
+    Deal_Name : Optional[str] = None
     OrderID : Optional[str] = None
     Customer_id : Optional[str] = None
     Customer_Name: Optional[str] = None
     Dropoff_Location : Optional[str] = None
-    Order_ID : Optional[str] = None
     Pickup_Location : Optional[str] = None
-    Shipment_Status : Optional[str] = "Pending"
-    carrier_paid_status	: Optional[str] = "Unpaid"
-    customer_paid_status : Optional[str] = "Unpaid"
+    Stage : Optional[str] = "Pending"
+    Carrier_Payment_Status	: Optional[str] = "Unpaid"
+    Customer_Payment_Status	 : Optional[str] = "Unpaid"
     Name : Optional[str] = None
-    Vehicle_Details : Optional[list] = None
+    Orders : Optional[list] = None
     Customer_Notes : Optional[str] = None
 
 

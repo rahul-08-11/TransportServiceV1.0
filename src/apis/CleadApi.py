@@ -61,7 +61,7 @@ def add_leads(recom_df, job_id, token, session):
                     "CarrierID":carriers_with_ids[carrier_name],
                     "Name": Lead_Name,
                     "Carrier_Score": row['Lead Score'], # assing score
-                    "Transport_Job_ID": job_id,
+                    "Transport_Job_in_Deal": job_id,
                     "Progress_Status": "To Be Contacted",
                     "Estimated_Amount": row['Estimated Amount'],
                 }

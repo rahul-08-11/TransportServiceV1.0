@@ -67,9 +67,13 @@ logger = get_logger(__name__)
 def recommend_carriers(carrierT, pickup_city, destination_city):
     try:
         # Filter for the specific pickup and destination city
+        # location format as
+        # 3000 Rue King O, Sherbrooke, QC J1L 1C8
+        carrierT['Pickup City'] = carrierT['Pickup City'].fillna('')
+        carrierT['Destination City'] = carrierT['Destination City'].fillna('')
         recommended_carriers = carrierT[
-            (carrierT['Pickup City'].str.lower().str.strip().str.replace("é", "e").str.contains(normalize_text(pickup_city))) &
-            (carrierT['Destination City'].str.lower().str.strip().str.replace("é", "e").str.contains(normalize_text(destination_city)))
+            (carrierT['Pickup City'].apply(lambda x: normalize_text(x) in normalize_text(pickup_city))) &
+            (carrierT['Destination City'].apply(lambda x: normalize_text(x) in normalize_text(destination_city)))
         ].copy()
         logger.info(recommended_carriers['Carrier Name'])
         # Transport efficiency score calculation
