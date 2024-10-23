@@ -4,7 +4,6 @@ from typing import Optional
 
 class Order(BaseModel):
     Deal_Name : Optional[str] = None
-    OrderID : Optional[str] = None
     Customer_id : Optional[str] = None
     Customer_Name: Optional[str] = None
     Dropoff_Location : Optional[str] = None

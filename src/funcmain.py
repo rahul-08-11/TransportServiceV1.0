@@ -37,11 +37,10 @@ async def create_order(body: json) -> dict:
                 customer_name = body.get("Customer_name","")
 
                 OrderObj = Order(
-                    Deal_Name=f"{customer_name} - {Id}",
+                    Deal_Name=Id,
                     Customer_id = body.get("Customer_id",""),
                     Customer_Name =customer_name,
                     Dropoff_Location = order.get("Dropoff_Location",""),
-                    OrderID = Id,
                     Pickup_Location = order.get("Pickup_Location",""),
                     Vehicle_Details = order.get("Vehicle_Details",[{}]),
                     Customer_Notes = order.get("Customer_Notes",""),
