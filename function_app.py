@@ -87,3 +87,17 @@ async def Quotations(req: func.HttpRequest) -> func.HttpResponse:
     logger.info(f"body : {body}")
     response = await quotes_operation(body)
     return func.HttpResponse(json.dumps(body), status_code=200)
+
+
+
+
+@app.route(route="register-account",methods=['POST'])
+async def account_registration(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info(f'Request received from {req.url}')
+
+    try:
+        return await register_account(req=req)
+    
+    except Exception as e:
+        logging.error(f'Error processing request: {str(e)}')
+        return func.HttpResponse(f"Internal server error :{str(e)}", status_code=500)

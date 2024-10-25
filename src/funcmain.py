@@ -7,8 +7,8 @@ import json
 import pandas as pd
 import os
 # # # Load Env Variables
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 logger = get_logger(__name__)
 
@@ -21,64 +21,60 @@ async def create_order(body: json) -> dict:
     with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
         # Create the order ID for new request
         order_id = get_order_id(session)
-
+        order_id = order_id +1
+        order_id = f"#{order_id}"
         try:
-            orders_list = body.get("Orders",[{}])
+            try:
+                release_form = body.get("release_form","")
+                release_form = manage_prv(release_form)
+                logger.info(f"release_form : {release_form}")
+            except Exception as e:
+                logger.error(f"Func Main  Error: {e}")
 
-            for i, order in enumerate(orders_list):
-                Id =f"#{order_id + i}" 
-                try:
-                    release_forms = order.get("release_form","")
-                    logger.info(f"release_form : {release_forms}")
-                except Exception as e:
-                    logger.error(f"Func Main  Error: {e}")
+            # format deal name 
+            customer_name = body.get("Customer_name","")
+            
+            OrderObj = Order(
+                Deal_Name=order_id,
+                Customer_id = body.get("Customer_id",""),
+                Customer_Name =customer_name,
+                Dropoff_Location = body.get("Dropoff_Location",""),
+                Pickup_Location = body.get("Pickup_Location",""),
+                Vehicle_Details = body.get("Vehicle_Details",[{}]),
+                Customer_Notes = body.get("Customer_Notes",""),
+                Vehicle_Subform = body.get("Orders")
+            )
 
-                # format deal name 
-                customer_name = body.get("Customer_name","")
+            token = token_instance.get_access_token()
+            print(dict(OrderObj))
+            response = TJApi.add_order(dict(OrderObj), token, release_form)
 
-                OrderObj = Order(
-                    Deal_Name=Id,
-                    Customer_id = body.get("Customer_id",""),
-                    Customer_Name =customer_name,
-                    Dropoff_Location = order.get("Dropoff_Location",""),
-                    Pickup_Location = order.get("Pickup_Location",""),
-                    Vehicle_Details = order.get("Vehicle_Details",[{}]),
-                    Customer_Notes = order.get("Customer_Notes",""),
-                    Vehicle_Subform = [{
-                        "Year":order.get("Year",''),
-                        "Make":order.get("Make",''),
-                        "Model":order.get("Model",''),
-                        "Trim":order.get("Trim",''),
-                        "VIN":order.get("VIN",'')
-                    }]
+            try:
+                job_id = response["data"][0]["details"]["id"]
+
+                dbobj = OrdersDB(
+                    OrderID=order_id,  # Set the OrderID
+                    TransportRequestID=job_id,  # Add a comma here
+                    CustomerID=OrderObj.Customer_id,
+                    CustomerName=OrderObj.Customer_Name,
+                    Status="Pending",
+                    PickupLocation=OrderObj.Pickup_Location,
+                    DropoffLocation=OrderObj.Dropoff_Location,
+
                 )
+                session.add(dbobj)
+                session.commit()
 
-                token = token_instance.get_access_token()
-                print(dict(OrderObj))
-                response = TJApi.add_order(dict(OrderObj), token, release_forms)
-
-                try:
-                    job_id = response["data"][0]["details"]["id"]
-
-                    dbobj = OrdersDB(
-                        OrderID=Id,  # Set the OrderID
-                        TransportRequestID=job_id,  # Add a comma here
-                        CustomerID=OrderObj.Customer_id,
-                        CustomerName=OrderObj.Customer_Name,
-                        Status="Pending",
-                        PickupLocation=OrderObj.Pickup_Location,
-                        DropoffLocation=OrderObj.Dropoff_Location,
-
-                    )
-                    session.add(dbobj)
-                    session.commit()
-
-                except Exception as e:
-                    logger.error(f"Func Main  Error: {e}")
+            except Exception as e:
+                logger.error(f"Func Main  Error: {e}")
                     
             logger.info(f"Response Received : {response}")
 
-            return response
+            return {
+                "status":"success",
+                "orderID":order_id,
+                "zoho_order_id":job_id
+            }
         
         except Exception as e:
             logger.error(f"Func Main  Error: {e}")
@@ -118,7 +114,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
             try:
                 # check if order entered directly through Zoho
                 if order_id == "-":
-                    order_id = f"{get_order_id(session)}"
+                    order_id = f"#{get_order_id(session)}"
                     customer_body = body.get("Customer","")
 
                     try:
@@ -130,7 +126,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                         customer_id = 'n/a'
                         logger.error(f"Func Main  Error: {e}")
 
-                    await update_order({"id": Zoho_Job_ID, "Deal_Name": order_id})
+                    await update_order({"id": Zoho_Job_ID, "Deal_Name": f"#{order_id}"})
 
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID
@@ -185,3 +181,54 @@ async def quotes_operation(body : dict) -> func.HttpResponse:
 
     except Exception as e:
         logger.error(f"Func Main  Error: {e}")
+
+
+async def register_account(req : func.HttpRequest):
+    """ Register new account """
+    try:
+        # Get the access token
+        access_token=token_instance.get_access_token()
+
+        # Get the form data
+        body = req.form
+        logging.info(f"received form data: {body}")
+
+        # Create a Company Instance
+        company = Company(
+            Account_Name=body.get('Account_Name'),
+            Dealer_License_Number=body.get('Dealer_License_Number'),
+            Dealer_Phone=body.get('Dealer_Phone'),
+            Category=body.get('Dealership_Type'),
+            Address=body.get('Address'),
+            ExpiryDate=body.get('ExpiryDate'),
+            Business_Number=body.get('Business_Number'),
+            CRA_HST_GST_Number=body.get('CRA_HST_GST_Number'),
+            SK_PST_Number=body.get('SK_PST_Number'),
+            Email=body.get('Company_Email'),
+            BC_PST_Number=body.get('BC_PST_Number'),
+            Website = body.get('Website','')
+
+        )
+
+        # Add Company
+        response = add_bubble_companies(access_token,dict(company))
+
+        if response.status_code == 201:
+            logging.info(f"Add Customer :  {response.json()}")
+            return func.HttpResponse(response, status_code=201)
+
+        else:
+            return func.HttpResponse(response, status_code=500)
+
+
+    except Exception as e:
+        logging.error(f"Error adding submitted company in zoho {e}")
+        return func.HttpResponse(json.dumps({"error":str(e)}), status_code=500)
+    
+    
+
+
+# async def register_carriers(req : func.HttpRequest):
+#     """ Register new Carriers """
+#     try:
+#         # Get the access token

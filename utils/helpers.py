@@ -133,3 +133,13 @@ def get_order_id(session) -> int:
         order_id = 1 + result
 
     return order_id
+
+
+
+def manage_prv(url):
+    if url.startswith("//"):
+        url = "https:" + url
+    else:
+        return url
+
+    return url

@@ -5,7 +5,7 @@ logger = get_logger(__name__)
 
 MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
-def attach_release_form(token : str,  zoho_job_id : str, release_forms : list) -> dict:
+def attach_release_form(token : str,  zoho_job_id : str, release_form : str) -> dict:
     # Prepare the headers
     headers = {
         "Authorization": f"Zoho-oauthtoken {token}"
@@ -13,7 +13,7 @@ def attach_release_form(token : str,  zoho_job_id : str, release_forms : list) -
 
     # Prepare the data for the attachment
     data = {
-        "attachmentUrl": release_forms
+        "attachmentUrl": release_form
     }
 
     attachment_url = f"{MODULE_URL}/{zoho_job_id}/Attachments"
@@ -61,7 +61,7 @@ def get_zoho_id(access_token :str, unique_identifier : str, field_name :str , mo
         return None
 
 
-def add_order(order_data : dict, token : str, release_forms : list) -> dict:
+def add_order(order_data : dict, token : str, release_form : str) -> dict:
     try:
         headers = {
             "Authorization": f"Zoho-oauthtoken {token}",
@@ -100,7 +100,7 @@ def add_order(order_data : dict, token : str, release_forms : list) -> dict:
                 logger.info(f"Successfully added Order Job : {order_id}")
                 try:
                         
-                    document_response = attach_release_form(token, order_id, release_forms)
+                    document_response = attach_release_form(token, order_id, release_form)
                     logger.info(f"Document Attachment response : {document_response}")
                 except Exception as e:
                     logger.warning(f"Document Attachment error : {e}")

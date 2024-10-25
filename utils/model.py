@@ -26,3 +26,17 @@ class Clead(BaseModel):
     Pickup_Location : Optional[str] = None
     Dropoff_Location : Optional[str] = None
     Vehicle_Details : Optional[dict] = None
+
+class Company(BaseModel):
+    Account_Name: Optional[str] = None
+    Dealer_License_Number: Optional[str] = None
+    Dealer_Phone: Optional[str] = None
+    Category: Optional[str] = None
+    Website: Optional[str] = None
+    Address: Optional[str] = None
+    ExpiryDate: Optional[str] = None
+    Business_Number: Optional[str] = None
+    CRA_HST_GST_Number: Optional[str] = None
+    SK_PST_Number: Optional[str] = None
+    Email: Optional[str] = None
+    BC_PST_Number: Optional[str] = None
