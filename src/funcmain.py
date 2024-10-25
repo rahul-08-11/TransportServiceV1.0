@@ -21,7 +21,6 @@ async def create_order(body: json) -> dict:
     with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
         # Create the order ID for new request
         order_id = get_order_id(session)
-        order_id = order_id +1
         order_id = f"#{order_id}"
         try:
             try:
@@ -40,7 +39,6 @@ async def create_order(body: json) -> dict:
                 Customer_Name =customer_name,
                 Dropoff_Location = body.get("Dropoff_Location",""),
                 Pickup_Location = body.get("Pickup_Location",""),
-                Vehicle_Details = body.get("Vehicle_Details",[{}]),
                 Customer_Notes = body.get("Customer_Notes",""),
                 Vehicle_Subform = body.get("Orders")
             )
