@@ -7,8 +7,8 @@ import json
 import pandas as pd
 import os
 # # # Load Env Variables
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 logger = get_logger(__name__)
 
@@ -130,8 +130,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                         customer_id = 'n/a'
                         logger.error(f"Func Main  Error: {e}")
 
-                    deal_name = f"{customer_name} - {order_id}"
-                    await update_order({"id": Zoho_Job_ID, "OrderID": order_id,"Deal_Name": deal_name})
+                    await update_order({"id": Zoho_Job_ID, "Deal_Name": order_id})
 
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID

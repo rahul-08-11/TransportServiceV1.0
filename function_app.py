@@ -13,6 +13,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 carrierT = pd.read_csv("CarriersT.csv")
 @app.route(route="ping", methods=['GET'])
 async def ping(req: func.HttpRequest) -> func.HttpResponse:
+    
     logger.info('Ping request received.')
     return func.HttpResponse("Service is up", status_code=200)
 

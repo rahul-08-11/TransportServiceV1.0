@@ -73,17 +73,12 @@ class DatabaseConnection:
         if self.session:
             self.session.close()
 
-
-
-
-
 class Carriers(Base):
     __tablename__ = 'Carriers'
     id = Column(Integer, primary_key=True, autoincrement=True)
     CarrierName = Column(String(255), nullable=False)
     NumTransportjobs = Column(String(255), nullable=True)
     ZohoRecordID = Column(String(255), nullable=True)
-
 
 
 class OrdersDB(Base):
@@ -104,15 +99,13 @@ class OrdersDB(Base):
     ActualDeliveryTime = Column(DateTime, nullable=True)
     CarrierName = Column(String(255), nullable=True)
     CarrierID = Column(String(255), nullable=True)
-    # Define a relationship to TransportQuotation
-    quotations = relationship("TransportQuotation", back_populates="order")
 
 
 class TransportQuotation(Base):
     __tablename__ = 'TransportQuotation'
-    
+
     # Define both columns as part of the composite primary key
-    TransportRequestID = Column(String(255), ForeignKey('TransportOrders.TransportRequestID'), nullable=False)
+    TransportRequestID = Column(String(255), primary_key=True, nullable=False)
     CreateTime = Column(DateTime, default=sqlfunc.now(), nullable=False)
     CarrierName = Column(String(255), nullable=False)
     DropoffLocation = Column(String(255), nullable=True)
@@ -120,13 +113,6 @@ class TransportQuotation(Base):
     EstimatedPickupTime = Column(String(255), nullable=True)
     EstimatedDropoffTime = Column(String(255), nullable=True)
     Estimated_Amount = Column(String(255), nullable=True)
-    # Define a composite primary key
-    __table_args__ = (
-        PrimaryKeyConstraint('TransportRequestID', 'CarrierName'),
-    )
-
-    # Define a relationship back to Orders
-    order = relationship("OrdersDB", back_populates="quotations")
 
 
 def get_order_id(session) -> int:

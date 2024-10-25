@@ -6,6 +6,7 @@ logger = get_logger(__name__)
 CLEADS_URL="https://www.zohoapis.ca/crm/v2/Potential_Carrier"
 
 
+
 def get_carrier_id(access_token :str, unique_identifier : str, field_name :str):
     """
     unique_identifier : Primary key to search
@@ -63,7 +64,6 @@ def add_leads(recom_df, job_id, token, session):
                     "Carrier_Score": row['Lead Score'], # assing score
                     "Transport_Job_in_Deal": job_id,
                     "Progress_Status": "To Be Contacted",
-                    "Estimated_Amount": row['Estimated Amount'],
                 }
                 data.append(lead_data)
                 logger.info(f"data {lead_data}")
