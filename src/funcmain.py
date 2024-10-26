@@ -124,7 +124,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
                         customer_id = 'n/a'
                         logger.error(f"Func Main  Error: {e}")
 
-                    await update_order({"id": Zoho_Job_ID, "Deal_Name": f"#{order_id}"})
+                    await update_order({"id": Zoho_Job_ID, "Deal_Name": order_id})
 
                     dbobj = OrdersDB(
                         OrderID=order_id,  # Set the OrderID
