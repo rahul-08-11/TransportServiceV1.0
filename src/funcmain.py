@@ -114,7 +114,7 @@ async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
             logger.info(f"DB Connection established")
             try:
                 # check if order entered directly through Zoho
-                if order_id == "-":
+                if not order_id.startswith("#"):
                     order_id = f"#{get_order_id(session)}"
                     customer_body = body.get("Customer","")
 
