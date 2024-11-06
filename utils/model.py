@@ -6,8 +6,8 @@ class Order(BaseModel):
     Deal_Name : Optional[str] = None
     Customer_id : Optional[str] = None
     Customer_Name: Optional[str] = None
-    Dropoff_Location : Optional[str] = None
-    Pickup_Location : Optional[str] = None
+    Drop_off_Location : Optional[str] = None
+    PickupLocation : Optional[str] = None
     Stage : Optional[str] = "Pending"
     Carrier_Payment_Status	: Optional[str] = "Unpaid"
     Customer_Payment_Status	 : Optional[str] = "Unpaid"
@@ -40,3 +40,14 @@ class Company(BaseModel):
     SK_PST_Number: Optional[str] = None
     Email: Optional[str] = None
     BC_PST_Number: Optional[str] = None
+
+
+
+class Carrier(BaseModel):
+    Name: Optional[str] = None
+    Carrier_Type: Optional[str] = None
+    OperatingRegions: Optional[str] = None
+    Transport_Type	: Optional[list] = None
+    Phone_Number : Optional[str] = None
+    Email : Optional[str] = None
+    Address : Optional[str] = None

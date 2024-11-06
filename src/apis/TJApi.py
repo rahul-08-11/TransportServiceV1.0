@@ -5,27 +5,30 @@ logger = get_logger(__name__)
 
 MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
-def attach_release_form(token : str,  zoho_job_id : str, release_form : str) -> dict:
+def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list) -> dict:
     # Prepare the headers
     headers = {
         "Authorization": f"Zoho-oauthtoken {token}"
     }
 
-    # Prepare the data for the attachment
-    data = {
-        "attachmentUrl": release_form
-    }
 
     attachment_url = f"{MODULE_URL}/{zoho_job_id}/Attachments"
+    resp = []
+    for release_form in attachment_urls:
+        data = {
+            "attachmentUrl": release_form
+        }
+        
+        response = requests.post(f"{MODULE_URL}/{zoho_job_id}/Attachments", headers=headers, data=data)
+        
+        if response.status_code == 200:
+            logger.info(f"Successfully attached release form to Job: {zoho_job_id}")
+        else:
+            logger.error(f"Failed to attach release form to Job for {response.json()}")
 
-    response = requests.post(attachment_url, headers=headers, data=data)
+        resp.append(resp,response.json())
 
-    if response.status_code == 200:
-        logger.info(f"Successfully attached release form to Job : {zoho_job_id}")
-        return response.json()
-    else:
-        logger.error(f"Failed to attach release form to Job for {response.json()}")
-        return response.json()
+    return resp
 
 
 
@@ -61,7 +64,7 @@ def get_zoho_id(access_token :str, unique_identifier : str, field_name :str , mo
         return None
 
 
-def add_order(order_data : dict, token : str, release_form : str) -> dict:
+def add_order(order_data : dict, token : str, release_form : list) -> dict:
     try:
         headers = {
             "Authorization": f"Zoho-oauthtoken {token}",

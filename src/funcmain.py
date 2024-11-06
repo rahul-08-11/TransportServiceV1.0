@@ -24,10 +24,13 @@ async def create_order(body: json) -> dict:
         order_id = f"#{order_id}"
         try:
             try:
-                release_form = body.get("release_form","")
-                release_form = manage_prv(release_form)
-                logger.info(f"release_form : {release_form}")
+                release_forms_raw = body.get("release_form","")
+                release_forms_items = release_forms_raw.split(",")
+                release_forms = list(map(manage_prv, release_forms_items))
+
+                logger.info(f"release_form : {release_forms}")
             except Exception as e:
+                release_forms = list()
                 logger.error(f"Func Main  Error: {e}")
 
             # format deal name 
@@ -37,15 +40,15 @@ async def create_order(body: json) -> dict:
                 Deal_Name=order_id,
                 Customer_id = body.get("Customer_id",""),
                 Customer_Name =customer_name,
-                Dropoff_Location = body.get("Dropoff_Location",""),
-                Pickup_Location = body.get("Pickup_Location",""),
+                Drop_off_Location = body.get("Dropoff_Location",""),
+                PickupLocation = body.get("Pickup_Location",""),
                 Customer_Notes = body.get("Customer_Notes",""),
                 Vehicle_Subform = body.get("Orders")
             )
 
             token = token_instance.get_access_token()
             print(dict(OrderObj))
-            response = TJApi.add_order(dict(OrderObj), token, release_form)
+            response = TJApi.add_order(dict(OrderObj), token, release_forms)
 
             try:
                 job_id = response["data"][0]["details"]["id"]
@@ -56,8 +59,8 @@ async def create_order(body: json) -> dict:
                     CustomerID=OrderObj.Customer_id,
                     CustomerName=OrderObj.Customer_Name,
                     Status="Pending",
-                    PickupLocation=OrderObj.Pickup_Location,
-                    DropoffLocation=OrderObj.Dropoff_Location,
+                    PickupLocation=OrderObj.PickupLocation,
+                    DropoffLocation=OrderObj.Drop_off_Location,
 
                 )
                 session.add(dbobj)
@@ -184,39 +187,78 @@ async def quotes_operation(body : dict) -> func.HttpResponse:
 async def register_account(req : func.HttpRequest):
     """ Register new account """
     try:
+
         # Get the access token
         access_token=token_instance.get_access_token()
 
-        # Get the form data
-        body = req.form
+        # Get the json data
+        body = req.get_json()
         logging.info(f"received form data: {body}")
 
         # Create a Company Instance
         company = Company(
             Account_Name=body.get('Account_Name'),
             Dealer_License_Number=body.get('Dealer_License_Number'),
-            Dealer_Phone=body.get('Dealer_Phone'),
             Category=body.get('Dealership_Type'),
             Address=body.get('Address'),
             ExpiryDate=body.get('ExpiryDate'),
             Business_Number=body.get('Business_Number'),
             CRA_HST_GST_Number=body.get('CRA_HST_GST_Number'),
             SK_PST_Number=body.get('SK_PST_Number'),
-            Email=body.get('Company_Email'),
+            Email=body.get("PrimaryContact").get("Email"),
+            Dealer_Phone=body.get("PrimaryContact").get("Phone"),
             BC_PST_Number=body.get('BC_PST_Number'),
             Website = body.get('Website','')
 
         )
 
         # Add Company
-        response = add_bubble_companies(access_token,dict(company))
+        response = add_bubble_Customer(access_token,dict(company))
+        logger.info(response)
 
         if response.status_code == 201:
-            logging.info(f"Add Customer :  {response.json()}")
-            return func.HttpResponse(response, status_code=201)
+            ## means account register sucessfully
+
+            customer_id = response.json()["data"][0]["details"]["id"]
+            try:
+             
+                logger.info("Adding Primary Contact")
+                primaryID = add_customer_contact(access_token,body.get("PrimaryContact"),customer_id)
+            except Exception as e:
+                logger.error(f"Error Adding Primary Contact: {e}")
+                primaryID = ''
+
+            try:
+     
+                logger.info("Adding Secondary Contact")
+                secondaryID = add_customer_contact(access_token,body.get("OptionalContact"),customer_id)
+            except Exception as e:
+                logger.error(f"Error Adding Secondary Contact: {e}")
+                secondaryID = ''
+
+            resp = {
+                "status":"success",
+                "message":"Account created successfully",
+                "code":201,
+                "CustomerID":customer_id,
+                "PrimaryContactID":primaryID,
+                "OptionalContactID":secondaryID
+            }
+        elif response.status_code == 202:
+            resp = {
+                "status":"Duplicate Error",
+                "message":"Duplicate Account found",
+                "code":202
+            }
 
         else:
-            return func.HttpResponse(response, status_code=500)
+            resp = {
+             "status":response.status_code,
+             "message":response.text,   
+            }
+    
+
+        return resp
 
 
     except Exception as e:
@@ -226,7 +268,79 @@ async def register_account(req : func.HttpRequest):
     
 
 
-# async def register_carriers(req : func.HttpRequest):
-#     """ Register new Carriers """
-#     try:
-#         # Get the access token
+async def register_carriers(req : func.HttpRequest):
+    """ Register new Carriers """
+    try:
+        # Get the access token
+        access_token=token_instance.get_access_token()
+
+        # Get the json data
+        body = req.get_json()
+
+        carrierObj = Carrier(
+            Name=body.get('CarrierName'),
+            Carrier_Type=body.get('Carrier_Type'),
+            OperatingRegions=body.get('OperatingRegions'),
+            Transport_Type = body.get('Transport_Type'),
+            Phone_Number = body.get("PrimaryContact").get("Phone"),
+            Email = body.get("PrimaryContact").get("Email"),
+            Address = body.get('Address')
+        )
+
+
+        response = add_bubble_carrier(access_token,dict(carrierObj))
+        logger.info(response.json())
+
+
+        if response.status_code == 201:
+            carrier_id = response.json()["data"][0]["details"]["id"]
+
+            try:
+                logger.info("Adding Primary Contact")
+                payload = body.get("PrimaryContact")
+                payload['Carrier']=carrier_id
+                primaryID = add_carrier_contact(access_token,payload)
+            except Exception as e:
+                logger.error(f"Error Adding Contact: {e}")
+                primaryID = ''
+
+            try:
+        
+                logger.info("Adding Secondary Contact")
+                payload = body.get("OptionalContact")
+                payload['Carrier']=carrier_id
+                secondaryID = add_carrier_contact(access_token,body.get("OptionalContact"))
+            except Exception as e:
+                logger.error(f"Error Adding Contact: {e}")
+                secondaryID = ''
+
+            resp = {
+                "status":"success",
+                "message":"Carrier created successfully",
+                "code":201,
+                "CarrierID":carrier_id,
+                "PrimaryContactID":primaryID,
+                "OptionalContactID":secondaryID
+            }
+
+        elif response.status_code == 202:
+            resp = {
+                "status":"Duplicate Error",
+                "message":"Duplicate Carrier found",
+                "code":202
+            }
+        else:
+            resp = {
+             "status":response.status_code,
+             "message":response.text,   
+            }
+    
+
+        return resp
+
+
+    except Exception as e:
+        logging.error(f"Error adding submitted Carrier in zoho {e}")
+
+
+
