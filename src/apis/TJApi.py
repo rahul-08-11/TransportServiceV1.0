@@ -26,7 +26,7 @@ def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list)
         else:
             logger.error(f"Failed to attach release form to Job for {response.json()}")
 
-        resp.append(resp,response.json())
+        resp.append(response.json())
 
     return resp
 
