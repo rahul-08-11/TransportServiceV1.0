@@ -8,7 +8,7 @@ class Order(BaseModel):
     Customer_Name: Optional[str] = None
     Drop_off_Location : Optional[str] = None
     PickupLocation : Optional[str] = None
-    Stage : Optional[str] = "Pending"
+    Stage : Optional[str] = "Request Received"
     Carrier_Payment_Status	: Optional[str] = "Unpaid"
     Customer_Payment_Status	 : Optional[str] = "Unpaid"
     Name : Optional[str] = None
