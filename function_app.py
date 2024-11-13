@@ -14,7 +14,6 @@ carrierT = pd.read_csv("CarriersT.csv")
 @app.route(route="ping", methods=['GET','POST'])
 async def ping(req: func.HttpRequest) -> func.HttpResponse:
     logger.info(f'Request received from {req.url}')
-    logger.info(req.get_json())
     logger.info('Ping request received.')
     return func.HttpResponse("Service is up", status_code=200)
 
