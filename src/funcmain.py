@@ -7,8 +7,8 @@ import json
 import pandas as pd
 import os
 # # # Load Env Variables
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 logger = get_logger(__name__)
 
@@ -24,11 +24,19 @@ async def create_order(body: json) -> dict:
         order_id = f"#{order_id}"
         try:
             try:
-                release_forms_raw = body.get("release_form","")
-                release_forms_items = release_forms_raw.split(",")
-                release_forms = list(map(manage_prv, release_forms_items))
+                Vehicle_Subform = body.get("Vehicles","")
 
-                logger.info(f"release_form : {release_forms}")
+                vehicles = [{ k: v for k, v in vehicle.items() if v != "ReleaseForm"} for vehicle in Vehicle_Subform]
+
+                absrelease_forms = [vehicle["ReleaseForm"] for vehicle in Vehicle_Subform if vehicle['ReleaseForm'] not in ['null',None,'']]
+
+                if absrelease_forms:
+                    release_forms = list(map(manage_prv, absrelease_forms))
+
+                else:
+                    release_forms = list()
+                logger.info(f"Release Forms : {release_forms}")
+
             except Exception as e:
                 release_forms = list()
                 logger.error(f"Func Main  Error: {e}")
@@ -43,7 +51,7 @@ async def create_order(body: json) -> dict:
                 Drop_off_Location = body.get("Dropoff_Location",""),
                 PickupLocation = body.get("Pickup_Location",""),
                 Customer_Notes = body.get("Customer_Notes",""),
-                Vehicle_Subform = body.get("Orders")
+                Vehicle_Subform = vehicles,
             )
 
             token = token_instance.get_access_token()
