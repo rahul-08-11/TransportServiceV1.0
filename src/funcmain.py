@@ -44,7 +44,7 @@ async def create_order(body: json) -> dict:
             # format deal name 
             customer_name = body.get("Customer_name","")
             
-            OrderObj = OrderApi(
+            OrderObj = Order(
                 Deal_Name=order_id,
                 Customer_id = body.get("Customer_id",""),
                 Customer_Name =customer_name,
