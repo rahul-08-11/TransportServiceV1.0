@@ -5,6 +5,8 @@ logger = get_logger(__name__)
 
 MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
+VEHICLE_MODULE_URL = "https://www.zohoapis.ca/crm/v2/Vehicles"
+
 def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list) -> dict:
     # Prepare the headers
     headers = {
@@ -19,7 +21,7 @@ def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list)
             "attachmentUrl": release_form
         }
         
-        response = requests.post(f"{MODULE_URL}/{zoho_job_id}/Attachments", headers=headers, data=data)
+        response = requests.post(attachment_url, headers=headers, data=data)
         
         if response.status_code == 200:
             logger.info(f"Successfully attached release form to Job: {zoho_job_id}")
@@ -64,7 +66,7 @@ def get_zoho_id(access_token :str, unique_identifier : str, field_name :str , mo
         return None
 
 
-def add_order(order_data : dict, token : str, release_form : list) -> dict:
+def add_order(order_data : dict, token : str, release_form : list, vehicles : list) -> dict:
     try:
         headers = {
             "Authorization": f"Zoho-oauthtoken {token}",
@@ -72,19 +74,6 @@ def add_order(order_data : dict, token : str, release_form : list) -> dict:
         }
 
         customer_id = order_data['Customer_id']
-
-        try:
-            if not customer_id:
-                logger.info(f"Customer ID not found : Searching by CustomerName : {order_data['Customer_Name']}")
-                customer_id = get_zoho_id(access_token=token, unique_identifier=order_data['Customer_Name'], field_name="Account_Name",module_name="Accoutns")
-               
-                if customer_id:
-                    logger.info(f"Customer ID found : {customer_id}")
-                    order_data['Customer_id'] = customer_id
-
-
-        except Exception as e:
-            logger.warning(f"Customer ID or Searched Name not found: {e}")
 
         order_data['Layout'] =  {
                 "name":"Transport Job",
@@ -101,6 +90,8 @@ def add_order(order_data : dict, token : str, release_form : list) -> dict:
             if response.status_code == 201:
                 order_id =  response.json()["data"][0]["details"]["id"]
                 logger.info(f"Successfully added Order Job : {order_id}")
+                ## add the vehicles
+                vehicle_response = add_vehicles(token,vehicles, order_id)
                 try:
                         
                     document_response = attach_release_form(token, order_id, release_form)
@@ -122,7 +113,27 @@ def add_order(order_data : dict, token : str, release_form : list) -> dict:
 
         return {"message": "Error Creating Order","error": str(e)}
 
+def add_vehicles(token :str , vehicles : list, Order_ID : str):
+    headers = {
+            "Authorization": f"Zoho-oauthtoken {token}",
+            "Content-Type": "application/json",
+        }
+    
+    data = {
+        "data":vehicles
+    }
 
+    for i in range(len(vehicles)):
+        vehicles[i]['Name'] = vehicles[i]['Make'] + " " + vehicles[i]['Model'] + " " + vehicles[i]['Trim'] + " - " + str(vehicles[i]['Mileage']) + " - "+ vehicles[i]['VIN']
+        vehicles[i]['Source'] = "TRANSPORT_APP"
+        vehicles[i]['Status'] = "Available"
+        vehicles[i]['Deal_ID'] = Order_ID
+
+
+
+    response = requests.post(VEHICLE_MODULE_URL,json=data,headers=headers)
+
+    logger.info(f"vehicle added response {response.json()}")
 
 def update_order(updated_data : dict, token : str) -> dict:
 
@@ -153,7 +164,3 @@ def update_order(updated_data : dict, token : str) -> dict:
         logger.error(f"Error Updating Order: {e}")
 
         return {"message": "Error Updating Order","error": str(e)}
-
-    
-
-    

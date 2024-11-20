@@ -44,7 +44,7 @@ async def create_order(body: json) -> dict:
             # format deal name 
             customer_name = body.get("Customer_name","")
             
-            OrderObj = Order(
+            OrderObj = OrderApi(
                 Deal_Name=order_id,
                 Customer_id = body.get("Customer_id",""),
                 Customer_Name =customer_name,
@@ -56,7 +56,7 @@ async def create_order(body: json) -> dict:
 
             token = token_instance.get_access_token()
             print(dict(OrderObj))
-            response = TJApi.add_order(dict(OrderObj), token, release_forms)
+            response = OrderApi.add_order(dict(OrderObj), token, release_forms,Vehicle_Subform)
 
             try:
                 job_id = response["data"][0]["details"]["id"]
@@ -73,7 +73,17 @@ async def create_order(body: json) -> dict:
                 )
                 session.add(dbobj)
                 session.commit()
+                slack_msg = f"""
+                🚚 *New Transport Request :* 
 
+                    Details: 
+                    - Order ID: `{order_id}`  
+                    - Transport Volume: `{len(Vehicle_Subform)}` vehicles  
+                    - Pickup Location: {OrderObj.PickupLocation}  
+                    - Drop-off Location: {OrderObj.Drop_off_Location}
+                    [View Order Details](https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{order_id})  
+                """
+        
             except Exception as e:
                 logger.error(f"Func Main  Error: {e}")
                     
@@ -97,7 +107,7 @@ async def update_order(body: json) -> dict:
     try:
         token = token_instance.get_access_token()
 
-        response = TJApi.update_order(body, token)
+        response = OrderApi.update_order(body, token)
 
         return response
     
