@@ -7,3 +7,4 @@ SQLAlchemy==2.0.35
 pydantic==2.9.2
 pyodbc==5.1.0
 numpy==2.1.2
+slack-sdk==3.33.4

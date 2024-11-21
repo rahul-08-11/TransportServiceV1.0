@@ -6,6 +6,9 @@ from sqlalchemy import create_engine, Column, String, DateTime, PrimaryKeyConstr
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy import func as sqlfunc
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +45,53 @@ def get_logger(name):
     
     return logger
 
-    
+def send_message_to_channel(bot_token, channel_id, message):
+    client = WebClient(token=bot_token)
+
+    try:
+        response = client.chat_postMessage(
+            channel=channel_id,
+            text=message,
+            unfurl_links=False,  # Disable link previews
+    unfurl_media=False 
+        )
+        print(f"Message successfully sent to channel {channel_id} on Slack")
+    except SlackApiError as e:
+        print(f"Error sending Message to slack: {e}")
+
+
+
+def get_order_id(session) -> int:
+    # Query to fetch the maximum OrderID
+    last_order = session.query(sqlfunc.max(OrdersDB.OrderID)).scalar()
+    last_id = last_order if last_order is not None else None
+    try:
+        result = int(last_id.replace("#",""))
+        logger.info(result)
+    except Exception as e:
+        result = None
+
+    sorder_id = 10001
+
+    if result == None:
+        order_id = sorder_id
+    else:
+        order_id = 1 + result
+
+    return order_id
+
+
+
+def manage_prv(url):
+    if url.startswith("//"):
+        url = "https:" + url
+    else:
+        return url
+
+    return url
+
+
+
 class DatabaseConnection:
     # Class variable to hold the engine
     engine = None
@@ -72,6 +121,16 @@ class DatabaseConnection:
                 self.session.rollback()
         if self.session:
             self.session.close()
+
+
+def get_header(token):
+
+    headers = {
+            "Authorization": f"Zoho-oauthtoken {token}",
+            "Content-Type": "application/json",
+        }
+
+    return headers
 
 class Carriers(Base):
     __tablename__ = 'Carriers'
@@ -114,32 +173,3 @@ class TransportQuotation(Base):
     EstimatedDropoffTime = Column(String(255), nullable=True)
     Estimated_Amount = Column(String(255), nullable=True)
 
-
-def get_order_id(session) -> int:
-    # Query to fetch the maximum OrderID
-    last_order = session.query(sqlfunc.max(OrdersDB.OrderID)).scalar()
-    last_id = last_order if last_order is not None else None
-    try:
-        result = int(last_id.replace("#",""))
-        logger.info(result)
-    except Exception as e:
-        result = None
-
-    sorder_id = 10001
-
-    if result == None:
-        order_id = sorder_id
-    else:
-        order_id = 1 + result
-
-    return order_id
-
-
-
-def manage_prv(url):
-    if url.startswith("//"):
-        url = "https:" + url
-    else:
-        return url
-
-    return url

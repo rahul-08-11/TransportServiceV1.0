@@ -9,12 +9,11 @@ VEHICLE_MODULE_URL = "https://www.zohoapis.ca/crm/v2/Vehicles"
 
 def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list) -> dict:
     # Prepare the headers
+
+    attachment_url = f"{MODULE_URL}/{zoho_job_id}/Attachments"
     headers = {
         "Authorization": f"Zoho-oauthtoken {token}"
     }
-
-
-    attachment_url = f"{MODULE_URL}/{zoho_job_id}/Attachments"
     resp = []
     for release_form in attachment_urls:
         data = {
@@ -32,48 +31,8 @@ def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list)
 
     return resp
 
-
-
-def get_zoho_id(access_token :str, unique_identifier : str, field_name :str , module_name : str):
-    """
-    unique_identifier : Primary key to search
-    field_name : Name of the field to be searched
-
-    """
-    # API endpoint
-    url = "https://www.zohoapis.ca/crm/v2/{module_name}/search"
-
-    params = {"criteria": f"{field_name}:equals:{unique_identifier}"}
-
-    # Authorization Header
-    headers = {
-        "Authorization": f"Zoho-oauthtoken {access_token}",
-    }
-
-    # Make GET request to fetch id
-    response = requests.get(url, params=params, headers=headers)
-
-    logger.info(f"response received : {response}")
-    # Check if request was successful
-    if response.status_code == 200:
-        data = response.json()
-        if data["data"]:
-            id = data["data"][0]["id"]
-            return id
-        else:
-            return None
-    else:
-        return None
-
-
 def add_order(order_data : dict, token : str, release_form : list, vehicles : list) -> dict:
     try:
-        headers = {
-            "Authorization": f"Zoho-oauthtoken {token}",
-            "Content-Type": "application/json",
-        }
-
-        customer_id = order_data['Customer_id']
 
         order_data['Layout'] =  {
                 "name":"Transport Job",
@@ -82,8 +41,8 @@ def add_order(order_data : dict, token : str, release_form : list, vehicles : li
         
         payload = {"data": [order_data]}
 
-        response = requests.post(MODULE_URL, headers=headers, json=payload)
-
+        response = requests.post(MODULE_URL, headers=get_header(token), json=payload)
+        logger.info(response.json())
         logger.info(f"Order creation response : {response}")
 
         try:
@@ -91,7 +50,7 @@ def add_order(order_data : dict, token : str, release_form : list, vehicles : li
                 order_id =  response.json()["data"][0]["details"]["id"]
                 logger.info(f"Successfully added Order Job : {order_id}")
                 ## add the vehicles
-                vehicle_response = add_vehicles(token,vehicles, order_id)
+                vehicle_response = add_vehicles(token,vehicles, order_id,order_data['PickupLocation'],order_data['Drop_off_Location'])
                 try:
                         
                     document_response = attach_release_form(token, order_id, release_form)
@@ -102,7 +61,12 @@ def add_order(order_data : dict, token : str, release_form : list, vehicles : li
             else:
                 logger.error(f"Failed to add Order for {response.json()}")
 
-            return response.json()
+            return {
+                "status":"sucess",
+                "code":201,
+                "order_id":order_id,
+                "vehicles":vehicle_response
+            }
         
         except Exception as e:
             logger.error(f"Error Creating Order Request: {e}")
@@ -113,27 +77,36 @@ def add_order(order_data : dict, token : str, release_form : list, vehicles : li
 
         return {"message": "Error Creating Order","error": str(e)}
 
-def add_vehicles(token :str , vehicles : list, Order_ID : str):
-    headers = {
-            "Authorization": f"Zoho-oauthtoken {token}",
-            "Content-Type": "application/json",
-        }
+def add_vehicles(token :str , vehicles : list, Order_ID : str,pickuplocation : str, dropofflocation:str):
     
     data = {
         "data":vehicles
     }
 
     for i in range(len(vehicles)):
+        vehicles[i]['Layout'] =  {
+        "name":"Transport Vehicles",
+        "id": "3384000001943151"
+    }
         vehicles[i]['Name'] = vehicles[i]['Make'] + " " + vehicles[i]['Model'] + " " + vehicles[i]['Trim'] + " - "+ vehicles[i]['VIN']
         vehicles[i]['Source'] = "Transport Request"
-        vehicles[i]['Status'] = "Available"
+        vehicles[i]['Order_Status'] = "Pending"
         vehicles[i]['Deal_ID'] = Order_ID
+        vehicles[i]['Pickup_Location'] = pickuplocation
+        vehicles[i]['Dropoff_Location'] = dropofflocation
 
 
 
-    response = requests.post(VEHICLE_MODULE_URL,json=data,headers=headers)
+    batch_response = requests.post(VEHICLE_MODULE_URL,json=data,headers=get_header(token))
 
-    logger.info(f"vehicle added response {response.json()}")
+    logger.info(f"vehicle batch response {batch_response}")
+
+    for i,response in enumerate(batch_response.json()['data']):
+        vehicles[i]['Vehicle_ID'] = response['details']['id']
+
+    logger.info(f"vehicle added response {batch_response.json()}")
+
+    return vehicles
 
 def update_order(updated_data : dict, token : str) -> dict:
 

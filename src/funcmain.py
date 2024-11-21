@@ -59,7 +59,7 @@ async def create_order(body: json) -> dict:
             response = OrderApi.add_order(dict(OrderObj), token, release_forms,Vehicle_Subform)
 
             try:
-                job_id = response["data"][0]["details"]["id"]
+                job_id = response['order_id']
 
                 dbobj = OrdersDB(
                     OrderID=order_id,  # Set the OrderID
@@ -74,26 +74,25 @@ async def create_order(body: json) -> dict:
                 session.add(dbobj)
                 session.commit()
                 slack_msg = f"""
-                🚚 *New Transport Request :* 
+                🚚 *New Transport Request*
 
-                    Details: 
-                    - Order ID: `{order_id}`  
-                    - Transport Volume: `{len(Vehicle_Subform)}` vehicles  
-                    - Pickup Location: {OrderObj.PickupLocation}  
-                    - Drop-off Location: {OrderObj.Drop_off_Location}
-                    [View Order Details](https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{order_id})  
+        *Details:*
+        - Order ID: `{order_id}`
+        - Transport Volume: `{len(Vehicle_Subform)}` vehicles
+        - Pickup Location: `{OrderObj.PickupLocation}`
+        - Drop-off Location: `{OrderObj.Drop_off_Location}`
+
+        <https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{order_id}|View Order Details>
+
                 """
+                send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("CHANNEL_ID"),slack_msg)
         
             except Exception as e:
                 logger.error(f"Func Main  Error: {e}")
                     
             logger.info(f"Response Received : {response}")
 
-            return {
-                "status":"success",
-                "orderID":order_id,
-                "zoho_order_id":job_id
-            }
+            return response
         
         except Exception as e:
             logger.error(f"Func Main  Error: {e}")
