@@ -14,7 +14,6 @@ class Order(BaseModel):
     Name : Optional[str] = None
     Orders : Optional[list] = None
     Customer_Notes : Optional[str] = None
-    Vehicle_Subform : Optional[list] = None
 
 
 

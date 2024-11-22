@@ -1,5 +1,8 @@
 import requests
 from utils.helpers import *
+import asyncio
+import aiohttp
+
 
 logger = get_logger(__name__)
 
@@ -7,31 +10,39 @@ MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
 VEHICLE_MODULE_URL = "https://www.zohoapis.ca/crm/v2/Vehicles"
 
-def attach_release_form(token : str,  zoho_job_id : str, attachment_urls : list) -> dict:
-    # Prepare the headers
 
-    attachment_url = f"{MODULE_URL}/{zoho_job_id}/Attachments"
-    headers = {
-        "Authorization": f"Zoho-oauthtoken {token}"
-    }
-    resp = []
-    for release_form in attachment_urls:
-        data = {
-            "attachmentUrl": release_form
-        }
-        
-        response = requests.post(attachment_url, headers=headers, data=data)
-        
-        if response.status_code == 200:
-            logger.info(f"Successfully attached release form to Job: {zoho_job_id}")
+async def attach_release_form_async(token: str, zoho_id: str, attachment_urls: list, module: str):
+    """Attach release forms asynchronously."""
+    if module == "Deals":
+        attachment_url = f"{MODULE_URL}/{zoho_id}/Attachments"
+    elif module == "Vehicles":
+        attachment_url = f"{VEHICLE_MODULE_URL}/{zoho_id}/Attachments"
+
+    headers = {"Authorization": f"Zoho-oauthtoken {token}"}
+
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for release_form in attachment_urls:
+            data = {"attachmentUrl": release_form}
+            tasks.append(send_attachment_request(session, attachment_url, headers, data))
+
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        for response in responses:
+            if isinstance(response, Exception):
+                logger.error(f"Attachment request failed: {response}")
+            else:
+                logger.info(f"Attachment response: {response}")
+
+
+async def send_attachment_request(session, url, headers, data):
+    """Send an individual attachment request."""
+    async with session.post(url, headers=headers, data=data) as response:
+        if response.status == 200:
+            return await response.json()
         else:
-            logger.error(f"Failed to attach release form to Job for {response.json()}")
-
-        resp.append(response.json())
-
-    return resp
-
-def add_order(order_data : dict, token : str, release_form : list, vehicles : list) -> dict:
+            raise Exception(f"Failed to attach file: {await response.text()}")
+        
+def add_order(order_data : dict, token : str, release_form_lis : list, vehicles : list) -> dict:
     try:
 
         order_data['Layout'] =  {
@@ -41,72 +52,86 @@ def add_order(order_data : dict, token : str, release_form : list, vehicles : li
         
         payload = {"data": [order_data]}
 
-        response = requests.post(MODULE_URL, headers=get_header(token), json=payload)
-        logger.info(response.json())
-        logger.info(f"Order creation response : {response}")
+        zoho_response = requests.post(MODULE_URL, headers=get_header(token), json=payload)
+        logger.info(f"Zoho Order creation response : {zoho_response.json()}")
 
         try:
-            if response.status_code == 201:
-                order_id =  response.json()["data"][0]["details"]["id"]
+            if zoho_response.status_code == 201:
+                order_id =  zoho_response.json()["data"][0]["details"]["id"]
                 logger.info(f"Successfully added Order Job : {order_id}")
                 ## add the vehicles
-                vehicle_response = add_vehicles(token,vehicles, order_id,order_data['PickupLocation'],order_data['Drop_off_Location'])
+                vehicle_response,tasks = add_vehicles(token,vehicles, order_id,order_data['PickupLocation'],order_data['Drop_off_Location'])
                 try:
-                        
-                    document_response = attach_release_form(token, order_id, release_form)
-                    logger.info(f"Document Attachment response : {document_response}")
+        
+                    tasks.append(attach_release_form_async(token, order_id, release_form_lis, module="Deals"))
+                    # loop = asyncio.get_event_loop()
+                    for task in tasks:
+                        asyncio.create_task(task)
+            
+                    # logger.info(f"Document Attachment response : {loop}")
                 except Exception as e:
                     logger.warning(f"Document Attachment error : {e}")
                 
             else:
-                logger.error(f"Failed to add Order for {response.json()}")
+                logger.error(f"Failed to add Order for {vehicle_response.json()}")
 
             return {
                 "status":"sucess",
                 "code":201,
-                "order_id":order_id,
+                "Deal_Name":order_data['Deal_Name'],
+                "zoho_order_id":order_id,
                 "vehicles":vehicle_response
             }
         
         except Exception as e:
             logger.error(f"Error Creating Order Request: {e}")
 
-        return response.json()
+        return vehicle_response.json()
     except Exception as e:
         logger.error(f"Error Creating Order: {e}")
 
         return {"message": "Error Creating Order","error": str(e)}
 
 def add_vehicles(token :str , vehicles : list, Order_ID : str,pickuplocation : str, dropofflocation:str):
-    
+    """ Add vehicles to the order """
     data = {
         "data":vehicles
     }
-
-    for i in range(len(vehicles)):
-        vehicles[i]['Layout'] =  {
-        "name":"Transport Vehicles",
+    layout_info = {
+        "name": "Transport Vehicles",
         "id": "3384000001943151"
     }
-        vehicles[i]['Name'] = vehicles[i]['Make'] + " " + vehicles[i]['Model'] + " " + vehicles[i]['Trim'] + " - "+ vehicles[i]['VIN']
-        vehicles[i]['Source'] = "Transport Request"
-        vehicles[i]['Order_Status'] = "Pending"
-        vehicles[i]['Deal_ID'] = Order_ID
-        vehicles[i]['Pickup_Location'] = pickuplocation
-        vehicles[i]['Dropoff_Location'] = dropofflocation
+
+    for vehicle in vehicles:
+        vehicle.update({
+            "Layout": layout_info,
+            "Name": f"{vehicle['Make']} {vehicle['Model']} {vehicle['Trim']} - {vehicle['VIN']}",
+            "Source": "Transport Request",
+            "Order_Status": "Pending",
+            "Deal_ID": Order_ID,
+            "Pickup_Location": pickuplocation,
+            "Dropoff_Location": dropofflocation
+        })
 
 
+    batch_vehicle_resp = requests.post(VEHICLE_MODULE_URL,json=data,headers=get_header(token))
 
-    batch_response = requests.post(VEHICLE_MODULE_URL,json=data,headers=get_header(token))
+    logger.info(f"vehicle batch response {batch_vehicle_resp}")
 
-    logger.info(f"vehicle batch response {batch_response}")
+    loop = asyncio.get_event_loop()
+    tasks = []
+    for i, response in enumerate(batch_vehicle_resp.json()["data"]):
+        vehicles[i]["Vehicle_ID"] = response["details"]["id"]
+        del vehicles[i]["Layout"]
+        del vehicles[i]["Source"]
 
-    for i,response in enumerate(batch_response.json()['data']):
-        vehicles[i]['Vehicle_ID'] = response['details']['id']
+        # Attach release form asynchronously
+        task = attach_release_form_async(
+            token, vehicles[i]["Vehicle_ID"], [vehicles[i]["ReleaseForm"]], "Vehicles"
+        )
+        tasks.append(task)
 
-    logger.info(f"vehicle added response {batch_response.json()}")
-
-    return vehicles
+    return vehicles,tasks
 
 def update_order(updated_data : dict, token : str) -> dict:
 
