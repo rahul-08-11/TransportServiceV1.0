@@ -38,7 +38,7 @@ def get_carrier_id(access_token :str, unique_identifier : str, field_name :str):
 
 
 ## batch request
-def add_leads(recom_df, job_id, token, session):
+def add_leads(recom_df, job_id, token, carriers_with_ids):
     headers = {
         "Authorization": f"Zoho-oauthtoken {token}",
         "Content-Type": "application/json",
@@ -46,34 +46,23 @@ def add_leads(recom_df, job_id, token, session):
     data = []
     success_leads = 0
     logger.info(f"length of recommendation generated is {len(recom_df)}")
-    if not recom_df.empty:
-        logger.info(f"before adding into zoho {recom_df['Carrier Name'].tolist()}")
-        recom_df["Carrier Name"] = recom_df["Carrier Name"].apply(standardize_name)
-        carrier_names = recom_df["Carrier Name"].tolist()
-        carriers = session.query(Carriers).filter(Carriers.CarrierName.in_(carrier_names)).all()
-        carriers_with_ids = {c.CarrierName: c.ZohoRecordID for c in carriers}
-        logger.info(carriers_with_ids)
-        logger.info(recom_df['Carrier Name'].tolist())
-        for index, row in recom_df.iterrows():
-            try:
-                carrier_name = row["Carrier Name"]
-                Lead_Name = f"{standardize_name(carrier_name)}"
-                lead_data = {
-                    "CarrierID":carriers_with_ids[carrier_name],
-                    "Name": Lead_Name,
-                    "Carrier_Score": row['Lead Score'], # assing score
-                    "Transport_Job_in_Deal": job_id,
-                    "Progress_Status": "To Be Contacted",
-                }
-                data.append(lead_data)
-                logger.info(f"data {lead_data}")
-                success_leads += 1
-            except Exception as e:
-                logger.error(f"Error Adding/Parsing lead: {e}")
-    else:
-        logger.info(f"No recommendation Found for Job {job_id}")
-        return {"message": f"No recommendation Found for Job {job_id}"}
-
+    logger.info(recom_df['Carrier Name'].tolist())
+    for index, row in recom_df.iterrows():
+        try:
+            carrier_name = row["Carrier Name"]
+            Lead_Name = f"{standardize_name(carrier_name)}"
+            lead_data = {
+                "CarrierID":carriers_with_ids[carrier_name],
+                "Name": Lead_Name,
+                "Carrier_Score": row['Lead Score'], # assing score
+                "Transport_Job_in_Deal": job_id,
+                "Progress_Status": "To Be Contacted",
+            }
+            data.append(lead_data)
+            logger.info(f"data {lead_data}")
+            success_leads += 1
+        except Exception as e:
+            logger.error(f"Error Adding/Parsing lead: {e}")
 
     payload = {"data": data}
 

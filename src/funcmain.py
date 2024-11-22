@@ -205,10 +205,21 @@ class LeadAndQuote:
                 pickup_location = body.get('pickuploc', 'n/a')
                 dropoff_location = body.get('dropoffloc', 'n/a')
                 recommendation_df = recommend_carriers(carrierT, pickup_location, dropoff_location)
-                
-                response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,session)
-                
-                return response
+
+                if not recommendation_df.empty:
+                    logger.info(f"before adding into zoho {recommendation_df['Carrier Name'].tolist()}")
+                    recommendation_df["Carrier Name"] = recommendation_df["Carrier Name"].apply(standardize_name)
+                    carrier_names = recommendation_df["Carrier Name"].tolist()
+                    carriers = session.query(Carriers).filter(Carriers.CarrierName.in_(carrier_names)).all()
+                    carriers_with_ids = {c.CarrierName: c.ZohoRecordID for c in carriers}
+                    response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,carriers_with_ids)
+                    return response
+                else:
+                    return {
+                        "status":"failed",
+                        "message": "No Potential Carrier Found",
+                        "code": 500
+                    }
             
         except Exception as e:
             logger.error(f"Func Main  Error: {e}")
