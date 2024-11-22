@@ -125,9 +125,11 @@ def add_vehicles(token :str , vehicles : list, Order_ID : str,pickuplocation : s
         del vehicles[i]["Layout"]
         del vehicles[i]["Source"]
 
+        parsed_url = manage_prv(vehicles[i]["ReleaseForm"])
+
         # Attach release form asynchronously
         task = attach_release_form_async(
-            token, vehicles[i]["Vehicle_ID"], [vehicles[i]["ReleaseForm"]], "Vehicles"
+            token, vehicles[i]["Vehicle_ID"], [parsed_url], "Vehicles"
         )
         tasks.append(task)
 
