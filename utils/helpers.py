@@ -72,3 +72,33 @@ def get_header(token):
         }
 
     return headers
+
+
+
+def extract_tax_province(province_address):
+    province_map = {
+    "AB": "Alberta",
+    "BC": "British Columbia",
+    "MB": "Manitoba",
+    "NB": "New Brunswick",
+    "NL": "Newfoundland and Labrador",
+    "NS": "Nova Scotia",
+    "ON": "Ontario",
+    "PE": "Prince Edward Island",
+    "QC": "Quebec",
+    "SK": "Saskatchewan",
+    "NT": "Northwest Territories",
+    "NU": "Nunavut",
+    "YT": "Yukon"
+}
+
+
+    match = re.search(r",\s*([A-Z]{2})(?=\s*\w\d)" , province_address)
+    if match:
+        province_abbreviation = match.group(1)
+        tax_province = province_map.get(province_abbreviation, "Unknown Province")
+        print(f"Tax Province: {tax_province}")
+    else:
+        return "Unknown Province" 
+
+    return tax_province

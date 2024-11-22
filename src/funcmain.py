@@ -85,7 +85,8 @@ class TransportOrders:
                     Customer_Name =body.get("Customer_name",""),
                     Drop_off_Location = body.get("Dropoff_Location",""),
                     PickupLocation = body.get("Pickup_Location",""),
-                    Customer_Notes = body.get("Customer_Notes","")
+                    Customer_Notes = body.get("Customer_Notes",""),
+                    Tax_Province=extract_tax_province(body.get("Pickup_Location","")),
                 )
 
                 # Create the order in zoho crm
