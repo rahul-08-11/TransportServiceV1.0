@@ -166,7 +166,7 @@ class LeadAndQuote:
         """
         Initialize the Lead and Quote handler class."""
 
-    async def create_potential_carrier(body , carrierT: pd.DataFrame) -> dict:
+    async def create_potential_carrier(self, body , carrierT: pd.DataFrame) -> dict:
         """ Create an Potential Carrier in the CRM"""
         try:
             token = token_instance.get_access_token()
@@ -217,7 +217,7 @@ class LeadAndQuote:
             }
     
 
-    async def quotes_operation(body : dict) -> func.HttpResponse:
+    async def quotes_operation(self, body : dict) -> func.HttpResponse:
         """ Handle quotes operations"""
         
         try:
