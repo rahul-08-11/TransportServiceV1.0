@@ -2,7 +2,7 @@ import requests
 from utils.helpers import *
 import asyncio
 import aiohttp
-
+import os
 
 logger = get_logger(__name__)
 
@@ -17,30 +17,63 @@ async def attach_release_form_async(token: str, zoho_id: str, attachment_urls: l
         attachment_url = f"{MODULE_URL}/{zoho_id}/Attachments"
     elif module == "Vehicles":
         attachment_url = f"{VEHICLE_MODULE_URL}/{zoho_id}/Attachments"
+    else:
+        raise ValueError("Invalid module specified")
 
     headers = {"Authorization": f"Zoho-oauthtoken {token}"}
 
     async with aiohttp.ClientSession() as session:
         tasks = []
         for release_form in attachment_urls:
-            data = {"attachmentUrl": release_form}
-            tasks.append(send_attachment_request(session, attachment_url, headers, data))
+            file_name = os.path.basename(release_form)
+            local_file_path = f"/temp/{file_name}"
+            if not os.path.exists(local_file_path):
+                await download_file(release_form, local_file_path)  # Download the file asynchronously
+
+            # Use aiohttp.FormData for file upload
+            form_data = aiohttp.FormData()
+            form_data.add_field(
+                "file",
+                open(local_file_path, "rb"),  # Open file in binary read mode
+                filename=file_name,    # Explicitly set the filename
+                content_type="application/octet-stream"  # Optional, specify content type
+            )
+            # Schedule the upload task
+            tasks.append(send_attachment_request(session, attachment_url, headers, form_data, path= local_file_path,module_name=module))
 
         responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Handle responses
         for response in responses:
             if isinstance(response, Exception):
                 logger.error(f"Attachment request failed: {response}")
             else:
                 logger.info(f"Attachment response: {response}")
 
-
-async def send_attachment_request(session, url, headers, data):
+async def send_attachment_request(session, url, headers, form_data, path,module_name):
     """Send an individual attachment request."""
-    async with session.post(url, headers=headers, data=data) as response:
+    async with session.post(url, headers=headers, data=form_data) as response:
         if response.status == 200:
+            if module_name == "Deals":
+                os.remove(path)
             return await response.json()
         else:
-            raise Exception(f"Failed to attach file: {await response.text()}")
+            text = await response.text()
+            raise Exception(f"Failed to attach file: {text}")
+
+
+async def download_file(url, destination_path):
+    """Download a file asynchronously from a public URL."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                with open(destination_path, "wb") as file:
+                    file.write(await response.read())
+                logger.info(f"Downloaded file: {destination_path}")
+            else:
+                raise Exception(f"Failed to download file from {url}: {response.status}")
+
+
         
 def add_order(order_data : dict, token : str, release_form_lis : list, vehicles : list) -> dict:
     try:
