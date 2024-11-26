@@ -10,7 +10,7 @@ MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
 VEHICLE_MODULE_URL = "https://www.zohoapis.ca/crm/v2/Vehicles"
 
-
+TEMP_DIR = "/tmp"  # This is the writable directory in Azure Functions
 async def attach_release_form_async(token: str, zoho_id: str, attachment_urls: list, module: str):
     """Attach release forms asynchronously."""
     if module == "Deals":
@@ -26,7 +26,7 @@ async def attach_release_form_async(token: str, zoho_id: str, attachment_urls: l
         tasks = []
         for release_form in attachment_urls:
             file_name = os.path.basename(release_form)
-            local_file_path = f"/temp/{file_name}"
+            local_file_path = os.path.join(TEMP_DIR, file_name)  # Use /tmp for temporary files
             if not os.path.exists(local_file_path):
                 await download_file(release_form, local_file_path)  # Download the file asynchronously
 
@@ -35,11 +35,11 @@ async def attach_release_form_async(token: str, zoho_id: str, attachment_urls: l
             form_data.add_field(
                 "file",
                 open(local_file_path, "rb"),  # Open file in binary read mode
-                filename=file_name,    # Explicitly set the filename
+                filename=file_name,           # Explicitly set the filename
                 content_type="application/octet-stream"  # Optional, specify content type
             )
             # Schedule the upload task
-            tasks.append(send_attachment_request(session, attachment_url, headers, form_data, path= local_file_path,module_name=module))
+            tasks.append(send_attachment_request(session, attachment_url, headers, form_data, path=local_file_path, module_name=module))
 
         responses = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -50,15 +50,17 @@ async def attach_release_form_async(token: str, zoho_id: str, attachment_urls: l
             else:
                 logger.info(f"Attachment response: {response}")
 
-async def send_attachment_request(session, url, headers, form_data, path,module_name):
+async def send_attachment_request(session, url, headers, form_data, path, module_name):
     """Send an individual attachment request."""
     async with session.post(url, headers=headers, data=form_data) as response:
         if response.status == 200:
-            if module_name == "Deals":
-                os.remove(path)
+            logger.info(f"File uploaded successfully for module {module_name}")
+            os.remove(path)  # Clean up temporary file
             return await response.json()
         else:
             text = await response.text()
+            logger.error(f"Failed to attach file. Response: {text}")
+            os.remove(path)  # Clean up even on failure
             raise Exception(f"Failed to attach file: {text}")
 
 
@@ -69,10 +71,9 @@ async def download_file(url, destination_path):
             if response.status == 200:
                 with open(destination_path, "wb") as file:
                     file.write(await response.read())
-                logger.info(f"Downloaded file: {destination_path}")
+                logger.info(f"Downloaded file to: {destination_path}")
             else:
                 raise Exception(f"Failed to download file from {url}: {response.status}")
-
 
         
 def add_order(order_data : dict, token : str, release_form_lis : list, vehicles : list) -> dict:
