@@ -237,7 +237,7 @@ class LeadAndQuote:
                 logger.info(f"DB Connection established")
                 try:
                     quote = TransportQuotation(
-                        TransportRequestID=body.get("TransportRequestID","-"),
+                        QuotationRequestID=body.get("QuotationRequestID","-"),
                         CarrierName=body.get("CarrierName","-"),
                         DropoffLocation=body.get("DropoffLocation","-"), 
                         PickupLocation=body.get("PickupLocation","-"),

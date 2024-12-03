@@ -75,7 +75,7 @@ class TransportQuotation(Base):
     __tablename__ = 'TransportQuotation'
 
     # Define both columns as part of the composite primary key
-    TransportRequestID = Column(String(255), primary_key=True, nullable=False)
+    QuotationRequestID = Column(String(255), primary_key=True, nullable=False)
     CreateTime = Column(DateTime, default=sqlfunc.now(), nullable=False)
     CarrierName = Column(String(255), nullable=False)
     DropoffLocation = Column(String(255), nullable=True)
