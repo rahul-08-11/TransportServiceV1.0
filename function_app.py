@@ -66,6 +66,7 @@ async def CarrierLead(req: func.HttpRequest) -> func.HttpResponse:
         logger.error(f"Error processing request: {str(e)}")
         return func.HttpResponse("Internal server error", status_code=500)
 
+
 @app.route(route="quotes", methods=["POST"])
 async def Quotations(req: func.HttpRequest) -> func.HttpResponse:
 
