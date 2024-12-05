@@ -205,17 +205,48 @@ class LeadAndQuote:
                 
                 pickup_location = body.get('pickuploc', 'n/a')
                 dropoff_location = body.get('dropoffloc', 'n/a')
-                recommendation_df = recommend_carriers(carrierT, pickup_location, dropoff_location)
+                try:
+                    recommendation_df,pickupcity,dropoffcity = recommend_carriers(carrierT, pickup_location, dropoff_location)
 
-                if not recommendation_df.empty:
-                    logger.info(f"before adding into zoho {recommendation_df['Carrier Name'].tolist()}")
-                    recommendation_df["Carrier Name"] = recommendation_df["Carrier Name"].apply(standardize_name)
-                    carrier_names = recommendation_df["Carrier Name"].tolist()
-                    carriers = session.query(Carriers).filter(Carriers.CarrierName.in_(carrier_names)).all()
-                    carriers_with_ids = {c.CarrierName: c.ZohoRecordID for c in carriers}
-                    response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,carriers_with_ids)
-                    return response
-                else:
+                    with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
+                        logger.info("Checking Existing Quote Availability")
+
+                        matching_quotes = session.query(TransportQuotation).filter(
+                            TransportQuotation.PickupLocation.like(f"%{pickupcity}%"),
+                            TransportQuotation.DropoffLocation.like(f"%{dropoffcity}%")
+                        ).all()
+
+                        if matching_quotes:
+                            batch_quote = []
+                            for quote in matching_quotes:
+                                logger.info(f"{[quote.CarrierID],[quote.Estimated_Amount],[quote.EstimatedPickupTime],[quote.EstimatedDropoffTime]}")
+                                data = {
+                                    "Name": f"{order_id}-{quote.CarrierName}",
+                                    "Carriers": quote.CarrierID,
+                                    "Pickup_Location": pickup_location,
+                                    "Dropoff_Location": dropoff_location,
+                                    "Transport_Job_in_Deal": Zoho_Job_ID,
+                                    "Estimated_Amount":quote.Estimated_Amount,
+                                    "pickup_date_range":quote.EstimatedPickupTime,
+                                    "Delivery_Date_Range":quote.EstimatedDropoffTime,
+                                    "Approval_Status":"Not sent"
+                                }
+                                batch_quote.append(data)
+                            QuoteApi.create_quotes(token,batch_quote)
+
+
+
+
+                    if not recommendation_df.empty:
+                        logger.info(f"before adding into zoho {recommendation_df['Carrier Name'].tolist()}")
+                        recommendation_df["Carrier Name"] = recommendation_df["Carrier Name"].apply(standardize_name)
+                        carrier_names = recommendation_df["Carrier Name"].tolist()
+                        carriers = session.query(Carriers).filter(Carriers.CarrierName.in_(carrier_names)).all()
+                        carriers_with_ids = {c.CarrierName: c.ZohoRecordID for c in carriers}
+                        response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,carriers_with_ids)
+                        return response
+                except Exception as e:
+                    logger.warning(f"Error While Generating Recommendations : {e}")
                     return {
                         "status":"failed",
                         "message": "No Potential Carrier Found",
@@ -229,21 +260,30 @@ class LeadAndQuote:
             }
     
 
-    async def quotes_operation(self, body : dict) -> func.HttpResponse:
+    async def quotes_operation(self, body : dict, carrierT: pd.DataFrame) -> func.HttpResponse:
         """ Handle quotes operations"""
-        
+
         try:
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                 logger.info(f"DB Connection established")
                 try:
+                    temp_df = carrierT[carrierT['Pickup City'].str.lower().isin(body.get("PickupLocation","-").lower().replace(",",'').split()) & carrierT['Destination City'].str.lower().isin(body.get("DropoffLocation","-").lower().replace(",",'').split())]
+                    # identified cities
+                    pickup_city = temp_df['Pickup City'].iloc[0]
+                    destination_city = temp_df['Destination City'].iloc[0]
+        
                     quote = TransportQuotation(
+                        CreateTime = body.get("CreateTime","-"),
+                        CarrierID=body.get("CarrierID","-"),
                         QuotationRequestID=body.get("QuotationRequestID","-"),
                         CarrierName=body.get("CarrierName","-"),
                         DropoffLocation=body.get("DropoffLocation","-"), 
                         PickupLocation=body.get("PickupLocation","-"),
                         EstimatedPickupTime=body.get("EstimatedPickupTime","-"),
                         EstimatedDropoffTime=body.get("EstimatedDropoffTime","-"),
-                        Estimated_Amount=body.get("Estimated_Amount","-")
+                        Estimated_Amount=body.get("Estimated_Amount","-"),
+                        PickupCity=pickup_city,
+                        DestinationCity=destination_city,
                     )
                     session.add(quote)
                     session.commit()

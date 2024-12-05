@@ -102,3 +102,8 @@ def extract_tax_province(province_address):
         return "Unknown Province" 
 
     return tax_province
+
+def normalize_text(text):
+    if isinstance(text, str):
+        return text.lower().strip().replace("é", "e")
+    return text

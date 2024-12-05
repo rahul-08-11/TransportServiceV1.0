@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-
+from utils.helpers import get_logger
+logger = get_logger(__name__)
 
 
 def transport_eff_m(avg_day, max_day, min_day,count_requests):
@@ -61,20 +62,19 @@ def normalize_text(text):
         return text.lower().strip().replace("é", "e")
     return text
 
-
-from utils.helpers import get_logger
-logger = get_logger(__name__)
 def recommend_carriers(carrierT, pickup_city, destination_city):
     try:
         # Filter for the specific pickup and destination city
         # location format as
         # 3000 Rue King O, Sherbrooke, QC J1L 1C8
-        carrierT['Pickup City'] = carrierT['Pickup City'].fillna('')
-        carrierT['Destination City'] = carrierT['Destination City'].fillna('')
-        recommended_carriers = carrierT[
-            (carrierT['Pickup City'].apply(lambda x: normalize_text(x) in normalize_text(pickup_city))) &
-            (carrierT['Destination City'].apply(lambda x: normalize_text(x) in normalize_text(destination_city)))
-        ].copy()
+        carrierT[['Pickup City', 'Destination City']] = carrierT[['Pickup City', 'Destination City']].fillna('')
+
+        recommended_carriers = carrierT[carrierT['Pickup City'].str.lower().isin(pickup_city.lower().replace(",",'').split()) & 
+                                        carrierT['Destination City'].str.lower().isin(destination_city.lower().replace(",",'').split())]
+        # identified cities
+        pickup_city = recommended_carriers['Pickup City'].iloc[0]
+        destination_city = recommended_carriers['Destination City'].iloc[0]
+
         logger.info(recommended_carriers['Carrier Name'])
         # Transport efficiency score calculation
         recommended_carriers['Transport Eff. Score'] = recommended_carriers.apply(
@@ -118,6 +118,6 @@ def recommend_carriers(carrierT, pickup_city, destination_city):
             logger.error(f"Lead Score Error: {e}")
         logger.info(recommended_carriers['Carrier Name'])
 
-        return recommended_carriers
+        return recommended_carriers,pickup_city,destination_city
     except Exception as e:
         logger.error(f"Recommendation  Error: {e}")

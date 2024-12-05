@@ -73,7 +73,7 @@ async def Quotations(req: func.HttpRequest) -> func.HttpResponse:
     logger.info(f"Request received from {req.url}")
     body = req.get_json()
     logger.info(f"body : {body}")
-    response = await LQhandler.quotes_operation(body)
+    response = await LQhandler.quotes_operation(body,carrierT)
     return func.HttpResponse(json.dumps(body), status_code=200)
 
 

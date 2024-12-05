@@ -75,13 +75,28 @@ class TransportQuotation(Base):
     __tablename__ = 'TransportQuotation'
 
     # Define both columns as part of the composite primary key
-    QuotationRequestID = Column(String(255), primary_key=True, nullable=False)
-    CreateTime = Column(DateTime, default=sqlfunc.now(), nullable=False)
+    QuotationRequestID = Column(String(255), nullable=False)
+    CreateTime = Column(String(255), nullable=False)
     CarrierName = Column(String(255), nullable=False)
     DropoffLocation = Column(String(255), nullable=True)
     PickupLocation = Column(String(255), nullable=True)
     EstimatedPickupTime = Column(String(255), nullable=True)
     EstimatedDropoffTime = Column(String(255), nullable=True)
     Estimated_Amount = Column(String(255), nullable=True)
+    CarrierID = Column(String(255), nullable=True)
+    PickupCity = Column(String(255), nullable=True)
+    DestinationCity = Column(String(255), nullable=True)
+        # Composite primary key
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            'EstimatedPickupTime', 
+            'EstimatedDropoffTime',
+            'PickupCity',
+            'DestinationCity',
+            'Estimated_Amount', 
+            'CarrierID',
+            name='quotation_request_pk'
+        ),
+    )
 
 
