@@ -229,6 +229,7 @@ class LeadAndQuote:
                                     "Estimated_Amount":quote.Estimated_Amount,
                                     "pickup_date_range":quote.EstimatedPickupTime,
                                     "Delivery_Date_Range":quote.EstimatedDropoffTime,
+                                    "CreateTime":quote.CreateTime,
                                     "Approval_Status":"Not sent"
                                 }
                                 batch_quote.append(data)
