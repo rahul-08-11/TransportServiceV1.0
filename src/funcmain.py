@@ -7,7 +7,7 @@ import json
 import pandas as pd
 import os
 from src.dbConnector import *
-from sqlalchemy import func as sqlfunc
+from sqlalchemy import and_ ,func as sqlfunc
 # # # Load Env Variables
 from dotenv import load_dotenv
 load_dotenv()
@@ -211,7 +211,28 @@ class LeadAndQuote:
                     with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                         logger.info("Checking Existing Quote Availability")
 
-                        matching_quotes = session.query(TransportQuotation).filter(
+                        # Subquery to get the latest CreateTime for each group
+                        subquery = session.query(
+                            TransportQuotation.CarrierID,
+                            TransportQuotation.PickupCity,
+                            TransportQuotation.DestinationCity,
+                            sqlfunc.max(TransportQuotation.CreateDate).label("MaxCreateTime")
+                        ).group_by(
+                            TransportQuotation.CarrierID,
+                            TransportQuotation.PickupCity,
+                            TransportQuotation.DestinationCity
+                        ).subquery()
+
+                        # Main query to fetch matching records with the latest CreateTime
+                        matching_quotes = session.query(TransportQuotation).join(
+                            subquery,
+                            and_(
+                                TransportQuotation.CarrierID == subquery.c.CarrierID,
+                                TransportQuotation.PickupCity == subquery.c.PickupCity,
+                                TransportQuotation.DestinationCity == subquery.c.DestinationCity,
+                                TransportQuotation.CreateDate == subquery.c.MaxCreateTime
+                            )
+                        ).filter(
                             TransportQuotation.PickupLocation.like(f"%{pickupcity}%"),
                             TransportQuotation.DropoffLocation.like(f"%{dropoffcity}%")
                         ).all()
@@ -219,7 +240,9 @@ class LeadAndQuote:
                         if matching_quotes:
                             batch_quote = []
                             for quote in matching_quotes:
-                                logger.info(f"{[quote.CarrierID],[quote.Estimated_Amount],[quote.EstimatedPickupTime],[quote.EstimatedDropoffTime]}")
+                                logger.info(f"{[quote.CarrierID],[quote.Estimated_Amount],[quote.EstimatedPickupTime],[quote.EstimatedDropoffTime],[quote.CreateDate]}")
+                                logger.info(f"{quote.CreateDate.strftime("%Y-%m-%d %H:%M:%S")}")
+                                
                                 data = {
                                     "Name": f"{order_id}-{quote.CarrierName}",
                                     "Carriers": quote.CarrierID,
@@ -229,7 +252,7 @@ class LeadAndQuote:
                                     "Estimated_Amount":quote.Estimated_Amount,
                                     "pickup_date_range":quote.EstimatedPickupTime,
                                     "Delivery_Date_Range":quote.EstimatedDropoffTime,
-                                    "CreateTime":quote.CreateTime,
+                                    "CreateDate":quote.CreateDate.strftime("%Y-%m-%d"),
                                     "Approval_Status":"Not sent"
                                 }
                                 batch_quote.append(data)
@@ -274,7 +297,6 @@ class LeadAndQuote:
                     destination_city = temp_df['Destination City'].iloc[0]
         
                     quote = TransportQuotation(
-                        CreateTime = body.get("CreateTime","-"),
                         CarrierID=body.get("CarrierID","-"),
                         QuotationRequestID=body.get("QuotationRequestID","-"),
                         CarrierName=body.get("CarrierName","-"),
