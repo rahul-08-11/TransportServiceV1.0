@@ -241,7 +241,6 @@ class LeadAndQuote:
                             batch_quote = []
                             for quote in matching_quotes:
                                 logger.info(f"{[quote.CarrierID],[quote.Estimated_Amount],[quote.EstimatedPickupTime],[quote.EstimatedDropoffTime],[quote.CreateDate]}")
-                                logger.info(f"{quote.CreateDate.strftime("%Y-%m-%d %H:%M:%S")}")
                                 
                                 data = {
                                     "Name": f"{order_id}-{quote.CarrierName}",
