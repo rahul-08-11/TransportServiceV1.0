@@ -5,7 +5,7 @@ logger = get_logger(__name__)
 
 QUOTES_API_URL = "https://www.zohoapis.ca/crm/v2/Transport_Offers"
 
-
+DEALS_MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 ## Request Header
 def get_header(token : str, content_type : str) -> dict:
 
@@ -29,3 +29,18 @@ def create_quotes(token,data):
         logger.error(f"Error creating Quotes: {e}")
         return {"message": "Error creating Quotes","error": str(e)}   
     
+
+
+def update_deal(token : str, new_data : dict) -> dict:
+
+    headers = get_header(token, "application/json")
+    try:
+        payload = {"data": [new_data]}
+        response = requests.patch(DEALS_MODULE_URL, headers=headers, json=payload)
+        logger.info(f"UPDATE DEAL RESPONSE : {response.json()}")
+        return response.json()
+    
+    except Exception as e:
+        logger.error(f"Error Updating Deal: {e}")
+
+        return {"message": "Error Updating Deal","error": str(e)}
