@@ -93,7 +93,7 @@ def extract_tax_province(province_address):
 }
 
 
-    match = re.search(r",\s*([A-Z]{2})(?=\s*\w\d)" , province_address)
+    match = re.search(r"[ ,]([A-Z]{2})[ ,]", province_address)
     if match:
         province_abbreviation = match.group(1)
         tax_province = province_map.get(province_abbreviation, "Unknown Province")
