@@ -85,7 +85,7 @@ class TransportOrders:
                     Customer_Name =body.get("Customer_name",""),
                     Drop_off_Location = body.get("Dropoff_Location",""),
                     PickupLocation = body.get("Pickup_Location",""),
-                    Customer_Notes = body.get("Customer_Notes",""),
+                    special_instructon = body.get("Special_Instruction",""),
                     Tax_Province=extract_tax_province(body.get("Pickup_Location","")),
                 )
 

@@ -13,7 +13,7 @@ class Order(BaseModel):
     Customer_Payment_Status	 : Optional[str] = "Unpaid"
     Name : Optional[str] = None
     Orders : Optional[list] = None
-    Customer_Notes : Optional[str] = None
+    special_instructon : Optional[str] = None
     Tax_Province : Optional[str] = None
 
 
