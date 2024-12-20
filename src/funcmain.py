@@ -304,6 +304,8 @@ class LeadAndQuote:
                         Estimated_Amount=body.get("Estimated_Amount","-"),
                         PickupCity=pickup_city,
                         DestinationCity=destination_city,
+                        TaxRate = body.get("Tax_Rate"),
+                        TaxName = body.get("Tax_Name")
                     )
                     session.add(quote)
                     session.commit()
