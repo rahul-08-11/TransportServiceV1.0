@@ -294,7 +294,7 @@ class LeadAndQuote:
                     destination_city = temp_df['Destination City'].iloc[0]
         
                     quote = TransportQuotation(
-                        CarrierID=body.get("CarrierID","-"),
+                        CarrierID=body.get("VendorID","-"),
                         QuotationRequestID=body.get("QuotationRequestID","-"),
                         CarrierName=body.get("CarrierName","-"),
                         DropoffLocation=body.get("DropoffLocation","-"), 
