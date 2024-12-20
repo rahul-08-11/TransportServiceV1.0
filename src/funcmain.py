@@ -294,7 +294,7 @@ class LeadAndQuote:
                     destination_city = temp_df['Destination City'].iloc[0]
         
                     quote = TransportQuotation(
-                        CarrierID=body.get("VendorID","-"),
+                        CarrierID=body.get("CarrierID","-"),
                         QuotationRequestID=body.get("QuotationRequestID","-"),
                         CarrierName=body.get("CarrierName","-"),
                         DropoffLocation=body.get("DropoffLocation","-"), 
@@ -323,8 +323,9 @@ class LeadAndQuote:
 
 
 
-    async def update_sql_quote(body: dict):
+    async def update_sql_quote(self,body: dict):
         try:
+            logger.info(f"body : {body}")
             # Extract data from the input
             primary_key_values = {
                 "EstimatedPickupTime": body.get("EstimatedPickupTime"),
