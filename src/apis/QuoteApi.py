@@ -29,7 +29,21 @@ def create_quotes(token,data):
         logger.error(f"Error creating Quotes: {e}")
         return {"message": "Error creating Quotes","error": str(e)}   
     
+def update_quote(token : str, new_data : dict) -> dict:
 
+    headers = get_header(token, "application/json")
+
+    try:
+        payload = {"data": [new_data]}
+        response = requests.patch(QUOTES_API_URL, headers=headers, json=payload)
+        logger.info(f"UPDATE QUOTES RESPONSE : {response.json()}")
+        return response.json()
+    
+    except Exception as e:
+        logger.error(f"Error Updating Quotes: {e}")
+
+        return {"message": "Error Updating Quotes","error": str(e)}
+    
 
 def update_deal(token : str, new_data : dict) -> dict:
 

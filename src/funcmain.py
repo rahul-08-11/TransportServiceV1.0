@@ -283,7 +283,7 @@ class LeadAndQuote:
 
     async def quotes_operation(self, body : dict, carrierT: pd.DataFrame) -> func.HttpResponse:
         """ Handle quotes operations"""
-
+        token = token_instance.get_access_token()
         try:
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                 logger.info(f"DB Connection established")
@@ -307,8 +307,63 @@ class LeadAndQuote:
                     )
                     session.add(quote)
                     session.commit()
+                    ## update pickup and dropoff city
+                    QuoteApi.update_quote(token,{
+                        "id":body.get("QuotationRequestID","-"),
+                        "Pickup_City":pickup_city,
+                        "Drop_off_City":destination_city
+                    })
                 except Exception as e:
                     logger.error(f"Quote Creation Error: {e}")
 
         except Exception as e:
             logger.error(f"Quote Creation Error: {e}")
+
+
+
+    async def update_sql_quote(body: dict):
+        try:
+            # Extract data from the input
+            primary_key_values = {
+                "EstimatedPickupTime": body.get("EstimatedPickupTime"),
+                "EstimatedDropoffTime": body.get("EstimatedDropoffTime"),
+                "PickupCity": body.get("PickupCity"),
+                "DestinationCity": body.get("DestinationCity"),
+                "Estimated_Amount": body.get("OldEstimatedAmount"),
+                "CarrierID": body.get("CarrierID"),
+            }
+            tax_amount = body.get("Tax_Amount")
+            tax_rate = body.get("Tax_Rate")
+            tax_name = body.get("Tax_Name")
+            customerprice = body.get("Customer_Price")
+            total_amount = body.get("Total_Amount")
+
+            # Establish the database connection
+            with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
+                logger.info("DB Connection established")
+
+                # Find the record by composite primary key
+                query = session.query(TransportQuotation).filter_by(**primary_key_values).first()
+
+                if not query:
+                    logger.warning("No record found with the given primary key values")
+                    return {"status": "error", "message": "Record not found"}
+
+                # Update the fields
+                query.TaxAmount = tax_amount
+                query.TaxRate = tax_rate
+                query.TaxName = tax_name
+                query.CustomerPrice_excl_tax = customerprice
+                query.TotalAmount = total_amount
+                # Commit the changes
+                session.commit()
+                logger.info("Record updated successfully")
+
+                return {"status": "success", "message": "Record updated successfully"}
+
+        except Exception as e:
+            logger.error(f"Database error occurred: {e}")
+            return {"status": "error", "message": "Database error occurred"}
+        except Exception as e:
+            logger.error(f"An unexpected error occurred: {e}")
+            return {"status": "error", "message": "Unexpected error occurred"}

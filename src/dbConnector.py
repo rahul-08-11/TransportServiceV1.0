@@ -1,5 +1,5 @@
 
-from sqlalchemy import create_engine, Column, String, DateTime, PrimaryKeyConstraint, Integer, ForeignKey
+from sqlalchemy import create_engine, Column, String, DateTime, PrimaryKeyConstraint, Integer, ForeignKey, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy import func as sqlfunc
@@ -81,6 +81,11 @@ class TransportQuotation(Base):
     PickupCity = Column(String(255), nullable=True)
     DestinationCity = Column(String(255), nullable=True)
     CreateDate = Column(DateTime, default=sqlfunc.now(), nullable=False)
+    TaxName = Column(String(50), nullable=True)
+    TaxRate = Column(Float, nullable=True)
+    TaxAmount = Column(Float, nullable=True)
+    CustomerPrice_excl_tax = Column(Float, nullable=True)
+    TotalAmount = Column(Float, nullable=True)
         # Composite primary key
     __table_args__ = (
         PrimaryKeyConstraint(
