@@ -262,8 +262,8 @@ class LeadAndQuote:
                         logger.info(f"before adding into zoho {recommendation_df['Carrier Name'].tolist()}")
                         recommendation_df["Carrier Name"] = recommendation_df["Carrier Name"].apply(standardize_name)
                         carrier_names = recommendation_df["Carrier Name"].tolist()
-                        carriers = session.query(Carriers).filter(Carriers.CarrierName.in_(carrier_names)).all()
-                        carriers_with_ids = {c.CarrierName: c.ZohoRecordID for c in carriers}
+                        carriers = session.query(Vendor).filter(Vendor.VendorName.in_(carrier_names)).all()
+                        carriers_with_ids = {c.VendorName: c.ZohoRecordID for c in carriers}
                         response = CleadApi.add_leads(recommendation_df,Zoho_Job_ID, token,carriers_with_ids)
                         return response
                 except Exception as e:

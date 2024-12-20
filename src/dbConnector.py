@@ -38,7 +38,13 @@ class DatabaseConnection:
         if self.session:
             self.session.close()
 
+class Vendor(Base):
+    __tablename__ = 'Vendors'
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    VendorName = Column(String(255), nullable=False)
+    NumTransportJobs = Column(Integer, default=0)
+    ZohoRecordID = Column(String(255), unique=True, nullable=False, primary_key=True)
 
 
 ## ORM classes

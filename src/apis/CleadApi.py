@@ -13,7 +13,7 @@ def get_carrier_id(access_token :str, unique_identifier : str, field_name :str):
     field_name : Name of the field to be searched
     """
     # API endpoint
-    url = "https://www.zohoapis.ca/crm/v2/Carrier/search"
+    url = "https://www.zohoapis.ca/crm/v2/Vendors/search"
 
     params = {"criteria": f"{field_name}:equals:{unique_identifier}"}
 
@@ -52,7 +52,8 @@ def add_leads(recom_df, job_id, token, carriers_with_ids):
             carrier_name = row["Carrier Name"]
             Lead_Name = f"{standardize_name(carrier_name)}"
             lead_data = {
-                "CarrierID":carriers_with_ids[carrier_name],
+                # "CarrierID":carriers_with_ids[carrier_name],
+                "VendorID": carriers_with_ids[carrier_name],
                 "Name": Lead_Name,
                 "Carrier_Score": row['Lead Score'], # assing score
                 "Transport_Job_in_Deal": job_id,
