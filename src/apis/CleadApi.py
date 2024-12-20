@@ -52,7 +52,6 @@ def add_leads(recom_df, job_id, token, carriers_with_ids):
             carrier_name = row["Carrier Name"]
             Lead_Name = f"{standardize_name(carrier_name)}"
             lead_data = {
-                # "CarrierID":carriers_with_ids[carrier_name],
                 "VendorID": carriers_with_ids[carrier_name],
                 "Name": Lead_Name,
                 "Carrier_Score": row['Lead Score'], # assing score

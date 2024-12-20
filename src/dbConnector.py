@@ -46,17 +46,6 @@ class Vendor(Base):
     NumTransportJobs = Column(Integer, default=0)
     ZohoRecordID = Column(String(255), unique=True, nullable=False, primary_key=True)
 
-
-## ORM classes
-class Carriers(Base):
-    __tablename__ = 'Carriers'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    CarrierName = Column(String(255), nullable=False)
-    NumTransportjobs = Column(String(255), nullable=True)
-    ZohoRecordID = Column(String(255), nullable=True)
-
-
-
 class OrdersDB(Base):
     __tablename__ = 'TransportOrders'
     OrderID = Column(String(255), primary_key=True, nullable=False)  # No autoincrement here
