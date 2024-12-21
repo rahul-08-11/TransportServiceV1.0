@@ -402,11 +402,7 @@ class LeadAndQuote:
                     logger.warning("No record found with the given primary key values")
                     return {"status": "error", "message": "Record not found"}
 
-                # Update the fields
-                # query.TaxAmount = tax_amount
-                # query.TaxRate = tax_rate
-                # query.TaxName = tax_name
-                query.CustomerPrice_excl_tax = customerprice
+                query.CustomerPrice_excl_tax = float(customerprice)
                 query.TaxAmount = query.CustomerPrice_excl_tax * (query.TaxRate/100)
                 query.TotalAmount = query.TaxAmount + query.CustomerPrice_excl_tax
                 # Commit the changes
