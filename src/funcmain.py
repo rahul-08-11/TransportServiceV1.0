@@ -237,7 +237,8 @@ class LeadAndQuote:
                                     "CreateDate":quote.CreateDate.strftime("%Y-%m-%d"),
                                     "Approval_Status":"Not sent",
                                     "Pickup_City":pickup_city,
-                                    "Drop_off_City":destination_city
+                                    "Drop_off_City":destination_city,
+                                    "Customer_Price_Excl_Tax":quote.CustomerPrice_excl_tax
                                 }
                                 batch_quote.append(data)
                             QuoteApi.create_quotes(token,batch_quote)
