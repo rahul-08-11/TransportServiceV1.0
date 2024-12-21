@@ -67,13 +67,13 @@ async def CarrierLead(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse("Internal server error", status_code=500)
 
 
-@app.route(route="quotes", methods=["POST"])
-async def Quotations(req: func.HttpRequest) -> func.HttpResponse:
+@app.route(route="store-quotes", methods=["POST"])
+async def store_quote(req: func.HttpRequest) -> func.HttpResponse:
 
     logger.info(f"Request received from {req.url}")
     body = req.get_json()
     logger.info(f"body : {body}")
-    response = await LQhandler.quotes_operation(body,carrierT)
+    response = await LQhandler.store_sql_quote(body,carrierT)
     return func.HttpResponse(json.dumps(body), status_code=200)
 
 

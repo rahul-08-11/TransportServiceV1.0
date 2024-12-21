@@ -70,7 +70,6 @@ class TransportQuotation(Base):
     __tablename__ = 'TransportQuotation'
 
     # Define both columns as part of the composite primary key
-    QuotationRequestID = Column(String(255), nullable=False)
     CarrierName = Column(String(255), nullable=False)
     DropoffLocation = Column(String(255), nullable=True)
     PickupLocation = Column(String(255), nullable=True)
@@ -86,17 +85,27 @@ class TransportQuotation(Base):
     TaxAmount = Column(Float, nullable=True)
     CustomerPrice_excl_tax = Column(Float, nullable=True)
     TotalAmount = Column(Float, nullable=True)
+    QuoteStatus = Column(String(50), nullable=True)
+    Rating = Column(Float, default=0, nullable=True)
         # Composite primary key
     __table_args__ = (
         PrimaryKeyConstraint(
-            'EstimatedPickupTime', 
-            'EstimatedDropoffTime',
             'PickupCity',
             'DestinationCity',
-            'Estimated_Amount', 
-            'CarrierID',
+            'CarrierName',
+            'QuoteStatus',
             name='quotation_request_pk'
         ),
     )
 
 
+
+
+class TaxDataBase(Base):
+    __tablename__ = 'Taxdb'
+
+    tax_id = Column(String(255),nullable=False)
+    province = Column(String(255), nullable=False,primary_key=True)
+    tax_name = Column(String(255), nullable=False)
+    tax_rate = Column(Float, nullable=False)
+    tax_type = Column(String(255), nullable=False)

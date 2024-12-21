@@ -8,6 +8,7 @@ import pandas as pd
 import os
 from src.dbConnector import *
 from sqlalchemy import and_ ,func as sqlfunc
+from sqlalchemy.exc import IntegrityError
 # # # Load Env Variables
 from dotenv import load_dotenv
 load_dotenv()
@@ -281,7 +282,7 @@ class LeadAndQuote:
             }
     
 
-    async def quotes_operation(self, body : dict, carrierT: pd.DataFrame) -> func.HttpResponse:
+    async def store_sql_quote(self, body : dict, carrierT: pd.DataFrame) -> func.HttpResponse:
         """ Handle quotes operations"""
         token = token_instance.get_access_token()
         try:
@@ -292,10 +293,11 @@ class LeadAndQuote:
                     # identified cities
                     pickup_city = temp_df['Pickup City'].iloc[0]
                     destination_city = temp_df['Destination City'].iloc[0]
-        
-                    quote = TransportQuotation(
+                    ## search tax details 
+                    tax = session.query(TaxDataBase).filter(TaxDataBase.province == extract_tax_province(body.get("PickupLocation",""))).first()
+                    logger.info(f"tax : {tax}")
+                    new_quote = TransportQuotation(
                         CarrierID=body.get("CarrierID","-"),
-                        QuotationRequestID=body.get("QuotationRequestID","-"),
                         CarrierName=body.get("CarrierName","-"),
                         DropoffLocation=body.get("DropoffLocation","-"), 
                         PickupLocation=body.get("PickupLocation","-"),
@@ -304,17 +306,40 @@ class LeadAndQuote:
                         Estimated_Amount=body.get("Estimated_Amount","-"),
                         PickupCity=pickup_city,
                         DestinationCity=destination_city,
-                        TaxRate = body.get("Tax_Rate"),
-                        TaxName = body.get("Tax_Name")
+                        TaxRate = tax.tax_rate ,
+                        TaxName = tax.tax_name,
+                        QuoteStatus = "ACTIVE",
+
                     )
-                    session.add(quote)
-                    session.commit()
-                    ## update pickup and dropoff city
-                    QuoteApi.update_quote(token,{
-                        "id":body.get("QuotationRequestID","-"),
-                        "Pickup_City":pickup_city,
-                        "Drop_off_City":destination_city
-                    })
+                    try:
+                        # Attempt to add the new quote
+                        session.add(new_quote)
+                        session.commit()
+
+                    except IntegrityError:
+                        # Rollback the session to clear the failed transaction
+                        session.rollback()
+
+                        # Handle duplicate: mark existing quotes as INACTIVE
+                        session.query(TransportQuotation).filter(
+                            and_(
+                                TransportQuotation.PickupCity == new_quote.PickupCity,
+                                TransportQuotation.DestinationCity == new_quote.DestinationCity,
+                                TransportQuotation.CarrierName == new_quote.CarrierName,
+                                TransportQuotation.QuoteStatus == "ACTIVE",
+                            )
+                        ).update({"QuoteStatus": "INACTIVE"})
+
+                        # Commit the updates
+                        session.commit()
+
+                        # Retry adding the new quote
+                        session.add(new_quote)
+                        session.commit()
+
+                    except Exception as e:
+                        logger.error(f"Quote Creation SQL DB Error: {e}")
+
                 except Exception as e:
                     logger.error(f"Quote Creation Error: {e}")
 
