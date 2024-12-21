@@ -337,15 +337,42 @@ class LeadAndQuote:
                         session.add(new_quote)
                         session.commit()
 
+
+
                     except Exception as e:
                         logger.error(f"Quote Creation SQL DB Error: {e}")
 
+
+                    QuoteApi.update_quote(token,{
+                        "id":body.get("QuotationRequestID","-"),
+                        "Pickup_City":pickup_city,
+                        "Drop_off_City":destination_city
+                    })
+
+                    return {
+                        "status":"success",
+                        "message": "Quote Created Successfully",
+                        "code": 200
+                    }
                 except Exception as e:
                     logger.error(f"Quote Creation Error: {e}")
+                    return {
+                        "status":"failed",
+                        "message": "Quote Creation Failed",
+                        "code": 500,
+                        "error": str(e)
+                    }
+
+                
 
         except Exception as e:
             logger.error(f"Quote Creation Error: {e}")
-
+            return {
+                        "status":"failed",
+                        "message": "Quote Creation Failed",
+                        "code": 500,
+                        "error": str(e)
+                    }
 
 
     async def update_sql_quote(self,body: dict):
@@ -353,18 +380,16 @@ class LeadAndQuote:
             logger.info(f"body : {body}")
             # Extract data from the input
             primary_key_values = {
-                "EstimatedPickupTime": body.get("EstimatedPickupTime"),
-                "EstimatedDropoffTime": body.get("EstimatedDropoffTime"),
+                "CarrierName": body.get("CarrierName"),
                 "PickupCity": body.get("PickupCity"),
                 "DestinationCity": body.get("DestinationCity"),
-                "Estimated_Amount": body.get("OldEstimatedAmount"),
-                "CarrierID": body.get("CarrierID"),
+                "QuoteStatus": "ACTIVE",
             }
-            tax_amount = body.get("Tax_Amount")
-            tax_rate = body.get("Tax_Rate")
-            tax_name = body.get("Tax_Name")
+            # customer_price = body.get("Customer_Price")
+            # tax_rate = body.get("Tax_Rate")
+            # tax_name = body.get("Tax_Name")
             customerprice = body.get("Customer_Price")
-            total_amount = body.get("Total_Amount")
+            # total_amount = body.get("Total_Amount")
 
             # Establish the database connection
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
@@ -378,11 +403,12 @@ class LeadAndQuote:
                     return {"status": "error", "message": "Record not found"}
 
                 # Update the fields
-                query.TaxAmount = tax_amount
-                query.TaxRate = tax_rate
-                query.TaxName = tax_name
+                # query.TaxAmount = tax_amount
+                # query.TaxRate = tax_rate
+                # query.TaxName = tax_name
                 query.CustomerPrice_excl_tax = customerprice
-                query.TotalAmount = total_amount
+                query.TaxAmount = query.CustomerPrice_excl_tax * (query.TaxRate/100)
+                query.TotalAmount = query.TaxAmount + query.CustomerPrice_excl_tax
                 # Commit the changes
                 session.commit()
                 logger.info("Record updated successfully")
