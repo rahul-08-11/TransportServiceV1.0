@@ -385,11 +385,7 @@ class LeadAndQuote:
                 "DestinationCity": body.get("DestinationCity"),
                 "QuoteStatus": "ACTIVE",
             }
-            # customer_price = body.get("Customer_Price")
-            # tax_rate = body.get("Tax_Rate")
-            # tax_name = body.get("Tax_Name")
             customerprice = body.get("Customer_Price")
-            # total_amount = body.get("Total_Amount")
 
             # Establish the database connection
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
