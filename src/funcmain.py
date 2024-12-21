@@ -227,7 +227,7 @@ class LeadAndQuote:
                                 
                                 data = {
                                     "Name": f"{order_id}-{quote.CarrierName}",
-                                    "Carriers": quote.CarrierID,
+                                    "VendorID": quote.CarrierID,
                                     "Pickup_Location": pickup_location,
                                     "Dropoff_Location": dropoff_location,
                                     "Transport_Job_in_Deal": Zoho_Job_ID,
