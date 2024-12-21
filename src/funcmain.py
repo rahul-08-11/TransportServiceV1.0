@@ -207,37 +207,19 @@ class LeadAndQuote:
                 pickup_location = body.get('pickuploc', 'n/a')
                 dropoff_location = body.get('dropoffloc', 'n/a')
                 try:
-                    recommendation_df,pickupcity,dropoffcity = recommend_carriers(carrierT, pickup_location, dropoff_location)
+                    recommendation_df,pickup_city,destination_city = recommend_carriers(carrierT, pickup_location, dropoff_location)
 
                     with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                         logger.info("Checking Existing Quote Availability")
-
-                        # Subquery to get the latest CreateTime for each group
-                        subquery = session.query(
-                            TransportQuotation.CarrierID,
-                            TransportQuotation.PickupCity,
-                            TransportQuotation.DestinationCity,
-                            sqlfunc.max(TransportQuotation.CreateDate).label("MaxCreateTime")
-                        ).group_by(
-                            TransportQuotation.CarrierID,
-                            TransportQuotation.PickupCity,
-                            TransportQuotation.DestinationCity
-                        ).subquery()
-
-                        # Main query to fetch matching records with the latest CreateTime
-                        matching_quotes = session.query(TransportQuotation).join(
-                            subquery,
+                        # Query to fetch matching records
+                        matching_quotes = session.query(TransportQuotation).filter(
                             and_(
-                                TransportQuotation.CarrierID == subquery.c.CarrierID,
-                                TransportQuotation.PickupCity == subquery.c.PickupCity,
-                                TransportQuotation.DestinationCity == subquery.c.DestinationCity,
-                                TransportQuotation.CreateDate == subquery.c.MaxCreateTime
+                                TransportQuotation.QuoteStatus == "Active",
+                                TransportQuotation.PickupCity.like(f"%{pickup_city}%"),
+                                TransportQuotation.DestinationCity.like(f"%{destination_city}%")
                             )
-                        ).filter(
-                            TransportQuotation.PickupLocation.like(f"%{pickupcity}%"),
-                            TransportQuotation.DropoffLocation.like(f"%{dropoffcity}%")
                         ).all()
-
+                       
                         if matching_quotes:
                             batch_quote = []
                             for quote in matching_quotes:
@@ -253,7 +235,9 @@ class LeadAndQuote:
                                     "pickup_date_range":quote.EstimatedPickupTime,
                                     "Delivery_Date_Range":quote.EstimatedDropoffTime,
                                     "CreateDate":quote.CreateDate.strftime("%Y-%m-%d"),
-                                    "Approval_Status":"Not sent"
+                                    "Approval_Status":"Not sent",
+                                    "Pickup_City":pickup_city,
+                                    "Drop_off_City":destination_city
                                 }
                                 batch_quote.append(data)
                             QuoteApi.create_quotes(token,batch_quote)
