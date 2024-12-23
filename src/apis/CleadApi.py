@@ -55,7 +55,7 @@ def add_leads(recom_df, job_id, token, carriers_with_ids):
                 "VendorID": carriers_with_ids[carrier_name],
                 "Name": Lead_Name,
                 "Carrier_Score": row['Lead Score'], # assing score
-                "Transport_Job_in_Deal": job_id,
+                "DealID": job_id,
                 "Progress_Status": "To Be Contacted",
             }
             data.append(lead_data)

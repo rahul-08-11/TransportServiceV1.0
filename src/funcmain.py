@@ -157,6 +157,46 @@ class TransportOrders:
             }
         
 
+    async def _update_sql_order(self,body: dict):
+        try:
+            logger.info(f"body : {body}")
+            with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
+                logger.info("DB Connection established")
+                primary_key_values = {
+                    "OrderID": body.get("OrderID",""),
+                }
+                query = session.query(OrdersDB).filter_by(**primary_key_values).first()
+
+                if not query:
+                    logger.warning("No record found with the given primary key values")
+                    return {"status": "error", "message": "Record not found"}
+                
+                            # Define updatable fields
+                updatable_fields = [
+                    "Status", "EstimatedDropoffTime", "EstimatedPickupTime", "CarrierID", "CarrierName", "CustomerPrice", "CarrierCost",
+                    "ActualDeliveryTime", "ActualPickupTime",
+                ]
+
+                # Update the record dynamically
+                for field in updatable_fields:
+                    if field in body and body[field] is not None:
+                        setattr(query, field, body[field])
+
+
+                session.commit()
+                logger.info("Record updated successfully")
+
+                return {"status": "success", "message": "Record updated successfully"}
+
+        except Exception as e:
+            logger.error(f"Func Main  Error: {e}")
+
+            return {
+                "error": str(e),
+                "message": "Error Updating Order",
+                "code": 500
+            }
+
 
     async def _delete_order(self):
         pass
@@ -230,7 +270,7 @@ class LeadAndQuote:
                                     "VendorID": quote.CarrierID,
                                     "Pickup_Location": pickup_location,
                                     "Dropoff_Location": dropoff_location,
-                                    "Transport_Job_in_Deal": Zoho_Job_ID,
+                                    "DealID": Zoho_Job_ID,
                                     "Estimated_Amount":quote.Estimated_Amount,
                                     "pickup_date_range":quote.EstimatedPickupTime,
                                     "Delivery_Date_Range":quote.EstimatedDropoffTime,
