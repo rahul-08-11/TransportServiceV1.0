@@ -109,6 +109,8 @@ def recommend_carriers(carrierT, pickup_city, destination_city):
         # Sort by final score
         recommended_carriers =  recommended_carriers.sort_values(by='CScore', ascending=True)
         recommended_carriers = recommended_carriers.drop(columns=['Pickup City','Pickup State/Province','Pickup Country','Destination City','Destination State/Province','Destination Country'])
+        # drop duplicate carrier names
+        recommended_carriers = recommended_carriers.drop_duplicates(subset='Carrier Name', keep='first')
         try:
             recommended_carriers['Lead Score'] = recommended_carriers.apply(
                 lambda row: categorize_intensity_dynamic(row['CScore'], recommended_carriers['CScore']),
