@@ -376,18 +376,13 @@ class LeadAndQuote:
                         "code": 200
                     }
                 except Exception as e:
-                    logger.error(f"Quote Creation Error: {e}")
-                    return {
-                        "status":"failed",
-                        "message": "Quote Creation Failed",
-                        "code": 500,
-                        "error": str(e)
-                    }
-
+                    raise Exception(f"Error creating Quotes: {e}")
                 
 
         except Exception as e:
             logger.error(f"Quote Creation Error: {e}")
+            slack_msg = f""" ❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{body.get('CarrierName','-')}` \n - Pickup City: `{body.get('PickupLocation','-')}` \n - Destination City: `{body.get('DropoffLocation','-')}` \n *Error:* {str(e)}"""
+            send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
             return {
                         "status":"failed",
                         "message": "Quote Creation Failed",
