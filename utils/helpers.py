@@ -76,6 +76,7 @@ def get_header(token):
 
 
 def extract_tax_province(province_address):
+    province_address = province_address.title().replace("é","e")
     province_map = {
     "AB": "Alberta",
     "BC": "British Columbia",
