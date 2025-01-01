@@ -108,17 +108,7 @@ class TransportOrders:
                     session.add(dbobj)
                     session.commit()
                     logger.info("---------Order added to DB-------------")
-                    slack_msg = f"""
-                    🚚 *New Transport Request*
-
-            *Details:*
-            - Order ID: `{order_id}`
-            - Transport Volume: `{len(body.get("Vehicles",""))}` vehicles
-            - Pickup Location: `{OrderObj.PickupLocation}`
-            - Drop-off Location: `{OrderObj.Drop_off_Location}`
-
-            <https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{job_id}|View Order Details>
-
+                    slack_msg = f"""🚚 *New Transport Request* \n *Details:* \n - Order ID: `{order_id}` \n - Transport Volume: `{len(body.get("Vehicles",""))}` vehicles \n - Pickup Location: `{OrderObj.PickupLocation}` \n - Drop-off Location: `{OrderObj.Drop_off_Location}` \n <https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{job_id}|View Order Details>
                     """
                     send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("CHANNEL_ID"),slack_msg)
 
@@ -321,6 +311,7 @@ class LeadAndQuote:
                     ## search tax details 
                     tax = session.query(TaxDataBase).filter(TaxDataBase.province == extract_tax_province(body.get("PickupLocation",""))).first()
                     logger.info(f"tax : {tax}")
+
                     new_quote = TransportQuotation(
                         CarrierID=body.get("CarrierID","-"),
                         CarrierName=body.get("CarrierName","-"),
@@ -334,12 +325,14 @@ class LeadAndQuote:
                         TaxRate = tax.tax_rate ,
                         TaxName = tax.tax_name,
                         QuoteStatus = "ACTIVE",
-
                     )
+
                     try:
                         # Attempt to add the new quote
                         session.add(new_quote)
                         session.commit()
+                        slack_msg = f"""💼📜 New Quote Added in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
+                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
                     except IntegrityError:
                         # Rollback the session to clear the failed transaction
@@ -361,12 +354,15 @@ class LeadAndQuote:
                         # Retry adding the new quote
                         session.add(new_quote)
                         session.commit()
-
-
+                        
+                        slack_msg = f"""Overwrite Existing Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - New Est. Amount: `{new_quote.Estimated_Amount}` \n - New Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - New Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
+                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
                     except Exception as e:
                         logger.error(f"Quote Creation SQL DB Error: {e}")
 
+                        slack_msg = f"""❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
+                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
                     QuoteApi.update_quote(token,{
                         "id":body.get("QuotationRequestID","-"),
