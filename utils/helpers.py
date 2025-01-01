@@ -74,9 +74,8 @@ def get_header(token):
     return headers
 
 
-
 def extract_tax_province(province_address):
-    province_address = province_address.title().replace("é","e")
+    province_address = province_address.upper()
     province_map = {
     "AB": "Alberta",
     "BC": "British Columbia",
@@ -94,7 +93,7 @@ def extract_tax_province(province_address):
 }
 
 
-    match = re.search(r"[ ,]([A-Z]{2})[ ,]", province_address)
+    match = re.search(r"(?:,\s*|\s+)([A-Z]{2})(?:\s+|,)", province_address)
     if match:
         province_abbreviation = match.group(1)
         tax_province = province_map.get(province_abbreviation, "Unknown Province")
