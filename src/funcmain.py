@@ -362,7 +362,7 @@ class LeadAndQuote:
                         logger.error(f"Quote Creation SQL DB Error: {e}")
 
                         slack_msg = f"""❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
-                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("CHANNEL_ID"),slack_msg)
+                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
                     QuoteApi.update_quote(token,{
                         "id":body.get("QuotationRequestID","-"),
@@ -382,7 +382,7 @@ class LeadAndQuote:
         except Exception as e:
             logger.error(f"Quote Creation Error: {e}")
             slack_msg = f""" ❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{body.get('CarrierName','-')}` \n - Pickup City: `{body.get('PickupLocation','-')}` \n - Destination City: `{body.get('DropoffLocation','-')}` \n *Error:* {str(e)}"""
-            send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("CHANNEL_ID"),slack_msg)
+            send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
             return {
                         "status":"failed",
                         "message": "Quote Creation Failed",
