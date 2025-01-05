@@ -272,7 +272,7 @@ class LeadAndQuote:
                                 }
                                 batch_quote.append(data)
                             QuoteApi.create_quotes(token,batch_quote)
-                            QuoteApi.update_deal(token,{"id":Zoho_Job_ID,"Stage":"Send Quote to Customer","Order_Status":"Quote Ready"})
+                            QuoteApi.update_deal(token,{"id":Zoho_Job_ID,"Stage":"Send Quote to Customer"})
 
                     if not recommendation_df.empty:
                         logger.info(f"before adding into zoho {recommendation_df['Carrier Name'].tolist()}")
