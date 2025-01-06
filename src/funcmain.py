@@ -416,10 +416,13 @@ class LeadAndQuote:
                 if not query:
                     logger.warning("No record found with the given primary key values")
                     return {"status": "error", "message": "Record not found"}
-
-                query.CustomerPrice_excl_tax = float(customerprice)
-                query.TaxAmount = query.CustomerPrice_excl_tax * (query.TaxRate/100)
-                query.TotalAmount = query.TaxAmount + query.CustomerPrice_excl_tax
+                
+                try:
+                    query.CustomerPrice_excl_tax = float(customerprice)
+                    query.TaxAmount = query.CustomerPrice_excl_tax * (query.TaxRate/100)
+                    query.TotalAmount = query.TaxAmount + query.CustomerPrice_excl_tax
+                except Exception as e:
+                    logger.warning(f"Error converting Customer Price to float: {e}")
 
                 if body.get("Approval_status") == "Accepted":
                     query.Rating = query.Rating + 1
