@@ -304,10 +304,13 @@ class LeadAndQuote:
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                 logger.info(f"DB Connection established")
                 try:
-                    temp_df = carrierT[carrierT['Pickup City'].str.lower().isin(body.get("PickupLocation","-").lower().replace(",",'').split()) & carrierT['Destination City'].str.lower().isin(body.get("DropoffLocation","-").lower().replace(",",'').split())]
+                    temp_df = carrierT[carrierT['Pickup City'].str.lower().isin(body.get("PickupLocation","-").lower().replace(",",'').split()) & 
+                                       carrierT['Destination City'].str.lower().isin(body.get("DropoffLocation","-").lower().replace(",",'').split())]
                     # identified cities
                     pickup_city = temp_df['Pickup City'].iloc[0]
                     destination_city = temp_df['Destination City'].iloc[0]
+                    logger.info(f"pickup city : {pickup_city} destination city : {destination_city}")
+                    logger.info(extract_tax_province(body.get("PickupLocation","")))
                     ## search tax details 
                     tax = session.query(TaxDataBase).filter(TaxDataBase.province == extract_tax_province(body.get("PickupLocation",""))).first()
                     logger.info(f"tax : {tax}")

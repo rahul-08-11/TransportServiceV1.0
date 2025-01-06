@@ -75,33 +75,36 @@ def get_header(token):
 
 
 def extract_tax_province(province_address):
-    province_address = province_address.upper()
+    province_address = province_address.upper()  # Convert to lowercase for flexibility
     province_map = {
-    "AB": "Alberta",
-    "BC": "British Columbia",
-    "MB": "Manitoba",
-    "NB": "New Brunswick",
-    "NL": "Newfoundland and Labrador",
-    "NS": "Nova Scotia",
-    "ON": "Ontario",
-    "PE": "Prince Edward Island",
-    "QC": "Quebec",
-    "SK": "Saskatchewan",
-    "NT": "Northwest Territories",
-    "NU": "Nunavut",
-    "YT": "Yukon"
-}
+        "AB": "Alberta",
+        "BC": "British Columbia",
+        "MB": "Manitoba",
+        "NB": "New Brunswick",
+        "NL": "Newfoundland and Labrador",
+        "NS": "Nova Scotia",
+        "ON": "Ontario",
+        "PE": "Prince Edward Island",
+        "QC": "Quebec",
+        "SK": "Saskatchewan",
+        "NT": "Northwest Territories",
+        "NU": "Nunavut",
+        "YT": "Yukon"
+    }
+    # First check for full province name (in case it's already present in the address)
+    for code, abbreviation in province_map.items():
+        if abbreviation.upper() in province_address:
+            return abbreviation.capitalize()  # Return the full name as a proper noun (capitalized)
 
-
-    match = re.search(r"(?:,\s*|\s+)([A-Z]{2})(?:\s+|,)", province_address)
+    # Then check for province abbreviation (2-letter code)
+    match = re.search(r"\b([A-Z]{2})\b", province_address)  # Regex looks for 2-letter province code
+    
     if match:
         province_abbreviation = match.group(1)
         tax_province = province_map.get(province_abbreviation, "Unknown Province")
-        print(f"Tax Province: {tax_province}")
+        return tax_province.capitalize()  # Return the province name corresponding to the abbreviation
     else:
-        return "Unknown Province" 
-
-    return tax_province
+        return "Unknown Province"
 
 def normalize_text(text):
     if isinstance(text, str):
