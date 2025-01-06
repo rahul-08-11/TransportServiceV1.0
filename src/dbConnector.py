@@ -87,6 +87,7 @@ class TransportQuotation(Base):
     TotalAmount = Column(Float, nullable=True)
     QuoteStatus = Column(String(50), nullable=True)
     Rating = Column(Float, default=0, nullable=True)
+    Currency = Column(String(50), nullable=True)
         # Composite primary key
     __table_args__ = (
         PrimaryKeyConstraint(

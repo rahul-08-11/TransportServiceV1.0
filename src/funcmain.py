@@ -420,6 +420,10 @@ class LeadAndQuote:
                 query.CustomerPrice_excl_tax = float(customerprice)
                 query.TaxAmount = query.CustomerPrice_excl_tax * (query.TaxRate/100)
                 query.TotalAmount = query.TaxAmount + query.CustomerPrice_excl_tax
+
+                if body.get("Approval_status") == "Accepted":
+                    query.Rating = query.Rating + 1
+
                 # Commit the changes
                 session.commit()
                 logger.info("Record updated successfully")
@@ -432,3 +436,48 @@ class LeadAndQuote:
         except Exception as e:
             logger.error(f"An unexpected error occurred: {e}")
             return {"status": "error", "message": "Unexpected error occurred"}
+    
+    async def get_quote(self,body: dict):
+        try:
+
+            pickup_city = body.get("PickupCity")
+            dropoff_city = body.get("DestinationCity")
+            
+            with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
+                logger.info("DB Connection established")
+                query = session.query(TransportQuotation).filter(
+                    and_(
+                        TransportQuotation.PickupCity == pickup_city,
+                        TransportQuotation.DestinationCity == dropoff_city,
+                        TransportQuotation.QuoteStatus == "ACTIVE",
+                    )
+                ).order_by(TransportQuotation.Rating.asc()).first() 
+                
+                if not query:
+                    logger.warning("No record found with the given pickup and destination cities")
+                    return {"status": "error", "message": "no quote found"}
+                
+                return {
+                    "status": "success",
+                    "quote":{
+                        "CarrierName":query.CarrierName,
+                        "Estimated_Amount":query.Estimated_Amount,
+                        "EstimatedPickupTime":query.EstimatedPickupTime,
+                        "EstimatedDropoffTime":query.EstimatedDropoffTime,
+                        "PickupCity":query.PickupCity,
+                        "DestinationCity":query.DestinationCity,
+                        "tax_rate":query.TaxRate,
+                        "tax_name":query.TaxName,
+                        "tax_amount":query.TaxAmount,
+                        "total_amount":query.TotalAmount,
+                        "CustomerPrice_excl_tax":query.CustomerPrice_excl_tax,
+                        "Currency":query.Currency
+                    },
+                    "code": 200
+                }
+    
+        except Exception as e:
+            logger.error(f"Func Main  Error: {e}")
+            return {
+                "error": str(e)
+            }

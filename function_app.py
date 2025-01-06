@@ -97,3 +97,13 @@ async def update_sqlorder(req: func.HttpRequest) -> func.HttpResponse:
     response = await Orderhandler._update_sql_order(body)
 
     return func.HttpResponse(json.dumps(body), status_code=200)
+
+@app.route(route="get-quote", methods=["POST"])
+async def get_quote(req: func.HttpRequest) -> func.HttpResponse:
+
+    body = req.get_json()
+    logger.info(f"body : {body}")
+
+    response = await LQhandler.get_quote(body)
+
+    return func.HttpResponse(json.dumps(response), status_code=200)
