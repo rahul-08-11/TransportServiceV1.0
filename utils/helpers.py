@@ -14,7 +14,6 @@ def standardize_name(name):
     name = re.sub(r"[^\w\s-]", '', name)  # Keeps hyphens, removes other punctuation
     # Remove extra spaces
     name = re.sub(r'\s+', ' ', name)  # Replace multiple spaces with a single space
-    name = name.replace("é","e")
     name = name.strip()  # Remove leading and trailing spaces
     return name
 

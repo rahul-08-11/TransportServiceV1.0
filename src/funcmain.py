@@ -304,21 +304,8 @@ class LeadAndQuote:
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                 logger.info(f"DB Connection established")
                 try:
-                    # Split and standardize the Pickup and Dropoff locations
-                    pickup_locations = [standardize_name(location) for location in body.get("PickupLocation", "-").split(",")]
-                    dropoff_locations = [standardize_name(location) for location in body.get("DropoffLocation", "-").split(",")]
-
-                    logger.info(f"Pickup Locations: {pickup_locations}")
-                    logger.info(f"Dropoff Locations: {dropoff_locations}")
-
-
-                    # Apply filtering
-                    temp_df = carrierT[
-                        carrierT['Pickup City'].apply(standardize_name).isin(pickup_locations) &
-                        carrierT['Destination City'].apply(standardize_name).isin(dropoff_locations)
-                    ]                    # identified cities
-
-                    logger.info(f"Temp DF: {temp_df}")
+                    temp_df = carrierT[carrierT['Pickup City'].str.lower().isin(body.get("PickupLocation","-").lower().replace(",",'').split()) & carrierT['Destination City'].str.lower().isin(body.get("DropoffLocation","-").lower().replace(",",'').split())]
+                    # identified cities
                     pickup_city = temp_df['Pickup City'].iloc[0]
                     destination_city = temp_df['Destination City'].iloc[0]
                     ## search tax details 
