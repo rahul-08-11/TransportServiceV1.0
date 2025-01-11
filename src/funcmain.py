@@ -337,6 +337,7 @@ class LeadAndQuote:
                                 TransportQuotation.PickupCity == new_quote.PickupCity,
                                 TransportQuotation.DestinationCity == new_quote.DestinationCity,
                                 TransportQuotation.CarrierName == new_quote.CarrierName,
+                                TransportQuotation.Estimated_Amount != new_quote.Estimated_Amount,
                                 TransportQuotation.QuoteStatus == "ACTIVE",
                             )
                         ).update({"QuoteStatus": "INACTIVE"})
@@ -354,8 +355,8 @@ class LeadAndQuote:
                     except Exception as e:
                         logger.error(f"Quote Creation SQL DB Error: {e}")
 
-                        slack_msg = f"""❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
-                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
+                        # slack_msg = f"""❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
+                        # send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
                     QuoteApi.update_quote(token,{
                         "id":body.get("QuotationRequestID","-"),
