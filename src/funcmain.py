@@ -143,7 +143,7 @@ class TransportOrders:
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
                 logger.info("DB Connection established")
                 primary_key_values = {
-                    "OrderID": body.get("OrderID",""),
+                    "TransportRequestID": body.get("DealID",""),
                 }
                 query = session.query(OrdersDB).filter_by(**primary_key_values).first()
 
@@ -193,7 +193,7 @@ class LeadAndQuote:
         try:
             token = token_instance.get_access_token()
             Zoho_Job_ID=body.get("Zoho_Job_ID","")
-            order_id = body.get("order_id","-")
+            order_id = body.get("OrderID","")
             logger.info(f"Adding Potential Carriers for {Zoho_Job_ID}")
             
             collective_response = {}
@@ -212,13 +212,13 @@ class LeadAndQuote:
                         logger.error(f"Error Creating Potential Carriers: {e}")
 
                         dbobj = OrdersDB(
-                            OrderID=order_id,  # Set the OrderID
                             TransportRequestID=Zoho_Job_ID,  # Add a comma here
                             CustomerID=customer_id,
                             CustomerName=customer_name
                         )
                         session.add(dbobj)
                         session.commit()
+                        order_id = dbobj.OrderID 
                         logger.info("commited successfully")
                 except Exception as e:
                     logger.error(f"Func Main  Error: {e}")
