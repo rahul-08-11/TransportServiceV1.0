@@ -332,7 +332,7 @@ class LeadAndQuote:
                         session.rollback()
 
                         # Handle duplicate: mark existing quotes as INACTIVE
-                        session.query(TransportQuotation).filter(
+                        affected_rows = session.query(TransportQuotation).filter(
                             and_(
                                 TransportQuotation.PickupCity == new_quote.PickupCity,
                                 TransportQuotation.DestinationCity == new_quote.DestinationCity,
@@ -342,22 +342,20 @@ class LeadAndQuote:
                             )
                         ).update({"QuoteStatus": "INACTIVE"})
 
-                        # Commit the updates
-                        session.commit()
 
-                        # Retry adding the new quote
-                        session.add(new_quote)
-                        session.commit()
+                       # Commit only if there are affected rows
+                        if affected_rows > 0:
+                            session.commit()
+
+                            # Retry adding the new quote
+                            session.add(new_quote)
+                            session.commit()
                         
-                        slack_msg = f"""Overwrite Existing Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - New Est. Amount: `{new_quote.Estimated_Amount}` \n - New Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - New Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
-                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
+                            slack_msg = f"""Overwrite Existing Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - New Est. Amount: `{new_quote.Estimated_Amount}` \n - New Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - New Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
+                            send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
                     except Exception as e:
                         logger.error(f"Quote Creation SQL DB Error: {e}")
-
-                        # slack_msg = f"""❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
-                        # send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
-
                     QuoteApi.update_quote(token,{
                         "id":body.get("QuotationRequestID","-"),
                         "Pickup_City":pickup_city,
