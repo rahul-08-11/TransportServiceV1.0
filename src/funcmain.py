@@ -100,7 +100,7 @@ class TransportOrders:
                         session.rollback()
                         return {"error": str(e), "message": "Error creating order in Zoho CRM", "code": 500}
 
-                    slack_msg = f"""🚚 *New Transport Request* \n *Details:* \n - Order ID: `{order_id}` \n - Transport Volume: `{len(body.get("Vehicles",""))}` vehicles \n - Pickup Location: `{OrderObj.PickupLocation}` \n - Drop-off Location: `{OrderObj.Drop_off_Location}` \n <https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{job_id}|View Order Details>
+                    slack_msg = f"""🚚 *New Transport Request* \n *Details:* \n - Order ID: `{order_id}` \n - Transport Volume: `{len(body.get("Vehicles",""))}` vehicles \n - Pickup Location: `{OrderObj.PickupLocation}` \n - Drop-off Location: `{OrderObj.DropoffLocation}` \n <https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{job_id}|View Order Details>
                     """
                     send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("CHANNEL_ID"),slack_msg)
 
