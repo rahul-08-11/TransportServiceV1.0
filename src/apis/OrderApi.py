@@ -46,6 +46,8 @@ def attach_url(token: str, zoho_id: str, attachment_url: str, module: str):
     """Attach release forms synchronously."""
     # Define the URL for the attachment based on the module
     headers = {"Authorization": f"Zoho-oauthtoken {token}"}
+
+    module_url = f"{VEHICLE_MODULE_URL}/{zoho_id}/Attachments"
     try:
         # Create the form data for the request
         data = {
@@ -53,7 +55,7 @@ def attach_url(token: str, zoho_id: str, attachment_url: str, module: str):
         }
 
         # Send the request to attach the URL as an attachment
-        response = requests.post(attachment_url, headers=headers, data=data)
+        response = requests.post(module_url, headers=headers, data=data)
 
         # Check the response
         if response.status_code == 200:
