@@ -85,7 +85,7 @@ class TransportQuotation(Base):
     PickupLocation = Column(String(255), nullable=True)
     EstimatedPickupTime = Column(String(255), nullable=True)
     EstimatedDropoffTime = Column(String(255), nullable=True)
-    Estimated_Amount = Column(String(255), nullable=True)
+    Estimated_Amount = Column(String(255), nullable=False)
     CarrierID = Column(String(255), nullable=True)
     PickupCity = Column(String(255), nullable=True)
     DestinationCity = Column(String(255), nullable=True)
@@ -98,6 +98,9 @@ class TransportQuotation(Base):
     QuoteStatus = Column(String(50), nullable=True)
     Rating = Column(Float, default=0, nullable=True)
     Currency = Column(String(50), nullable=True)
+    Additional = Column(Float, nullable=False, default=0)
+    Surcharge = Column(Float, nullable=False, default=0)
+    DeactivatedDateTime = Column(DateTime, nullable=True)
         # Composite primary key
     __table_args__ = (
         PrimaryKeyConstraint(
@@ -105,6 +108,9 @@ class TransportQuotation(Base):
             'DestinationCity',
             'CarrierName',
             'QuoteStatus',
+            'Estimated_Amount',
+            'Additional',
+            'Surcharge',
             name='quotation_request_pk'
         ),
     )

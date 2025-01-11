@@ -318,44 +318,53 @@ class LeadAndQuote:
                         TaxRate = tax.tax_rate ,
                         TaxName = tax.tax_name,
                         QuoteStatus = "ACTIVE",
+                        Additional = body.get("Additional","0"),
+                        Surcharge = body.get("Surcharge","0"),
                     )
 
-                    try:
-                        # Attempt to add the new quote
-                        session.add(new_quote)
-                        session.commit()
-                        slack_msg = f"""💼📜 New Quote Added in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
-                        send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
-
-                    except IntegrityError:
-                        # Rollback the session to clear the failed transaction
-                        session.rollback()
-
-                        # Handle duplicate: mark existing quotes as INACTIVE
-                        affected_rows = session.query(TransportQuotation).filter(
+                    row_count = session.query(TransportQuotation).filter(
                             and_(
                                 TransportQuotation.PickupCity == new_quote.PickupCity,
                                 TransportQuotation.DestinationCity == new_quote.DestinationCity,
                                 TransportQuotation.CarrierName == new_quote.CarrierName,
-                                TransportQuotation.Estimated_Amount != new_quote.Estimated_Amount,
+                                TransportQuotation.QuoteStatus == "ACTIVE",
+                                TransportQuotation.Estimated_Amount == new_quote.Estimated_Amount,
+                                TransportQuotation.Additional == new_quote.Additional,
+                                TransportQuotation.Surcharge == new_quote.Surcharge
+                            )
+                        ).count()
+                    
+                    if row_count > 0:
+                        logger.info("Same Value Quote already exists in the database")
+                        return {
+                            "status":"failed",
+                            "message": "Quote Already Exists",
+                            "code": 500
+                        }
+                    else:
+                        ## set all other quotes to inactive if distinct values for quote is entered
+                        session.query(TransportQuotation).filter(
+                            and_(
+                                TransportQuotation.PickupCity == new_quote.PickupCity,
+                                TransportQuotation.DestinationCity == new_quote.DestinationCity,
+                                TransportQuotation.CarrierName == new_quote.CarrierName,
                                 TransportQuotation.QuoteStatus == "ACTIVE",
                             )
                         ).update({"QuoteStatus": "INACTIVE"})
-
-
-                       # Commit only if there are affected rows
-                        if affected_rows > 0:
-                            session.commit()
-
-                            # Retry adding the new quote
+                   
+                        try:
+                            # Attempt to add the new quote
                             session.add(new_quote)
                             session.commit()
-                        
-                            slack_msg = f"""Overwrite Existing Quote in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - New Est. Amount: `{new_quote.Estimated_Amount}` \n - New Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - New Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
+                            slack_msg = f"""💼📜 New Quote Added in Database! \n *Details* \n - Carrier Name: `{new_quote.CarrierName}` \n - Pickup City: `{new_quote.PickupCity}` \n - Destination City: `{new_quote.DestinationCity}` \n - Est. Amount: `{new_quote.Estimated_Amount}` \n - Est. Pickup Time: `{new_quote.EstimatedPickupTime}` \n - Est. Dropoff Time: `{new_quote.EstimatedDropoffTime}`"""
                             send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
 
-                    except Exception as e:
-                        logger.error(f"Quote Creation SQL DB Error: {e}")
+                        except Exception as e:
+                            # Rollback the session to clear the failed transaction
+                            session.rollback()
+                            logger.error(f"Error adding new quote: {e}")
+
+
                     QuoteApi.update_quote(token,{
                         "id":body.get("QuotationRequestID","-"),
                         "Pickup_City":pickup_city,
@@ -373,8 +382,8 @@ class LeadAndQuote:
 
         except Exception as e:
             logger.error(f"Quote Creation Error: {e}")
-            slack_msg = f""" ❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{body.get('CarrierName','-')}` \n - Pickup City: `{body.get('PickupLocation','-')}` \n - Destination City: `{body.get('DropoffLocation','-')}` \n *Error:* {str(e)}"""
-            send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
+            # slack_msg = f""" ❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{body.get('CarrierName','-')}` \n - Pickup City: `{body.get('PickupLocation','-')}` \n - Destination City: `{body.get('DropoffLocation','-')}` \n *Error:* {str(e)}"""
+            # send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
             return {
                         "status":"failed",
                         "message": "Quote Creation Failed",
