@@ -382,8 +382,7 @@ class LeadAndQuote:
 
         except Exception as e:
             logger.error(f"Quote Creation Error: {e}")
-            # slack_msg = f""" ❌ Error Adding Quote in Database! \n *Details* \n - Carrier Name: `{body.get('CarrierName','-')}` \n - Pickup City: `{body.get('PickupLocation','-')}` \n - Destination City: `{body.get('DropoffLocation','-')}` \n *Error:* {str(e)}"""
-            # send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("QUOTE_CHANNEL_ID"),slack_msg)
+
             return {
                         "status":"failed",
                         "message": "Quote Creation Failed",
