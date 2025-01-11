@@ -46,10 +46,18 @@ class Vendor(Base):
     NumTransportJobs = Column(Integer, default=0)
     ZohoRecordID = Column(String(255), unique=True, nullable=False, primary_key=True)
 
+from sqlalchemy import Column, String, DateTime
+from sqlalchemy.sql import func as sqlfunc
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
 class OrdersDB(Base):
     __tablename__ = 'TransportOrders'
-    OrderID = Column(String(255), primary_key=True, nullable=False)  # No autoincrement here
-    TransportRequestID = Column(String(255), nullable=False, unique=True)  # Ensure this is unique
+    
+    # Auto-increment OrderID
+    OrderID = Column(Integer, primary_key=True, nullable=False, autoincrement=True)  # Auto-increment set here
+    TransportRequestID = Column(String(255), nullable=False, unique=True)  # Ensure TransportRequestID is unique
     CustomerID = Column(String(255), nullable=True)
     CustomerName = Column(String(255), nullable=True)
     CreateTime = Column(DateTime, default=sqlfunc.now(), nullable=False)
@@ -64,6 +72,8 @@ class OrdersDB(Base):
     ActualDeliveryTime = Column(DateTime, nullable=True)
     CarrierName = Column(String(255), nullable=True)
     CarrierID = Column(String(255), nullable=True)
+
+
 
 
 class TransportQuotation(Base):

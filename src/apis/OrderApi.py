@@ -9,10 +9,11 @@ logger = get_logger(__name__)
 MODULE_URL = "https://www.zohoapis.ca/crm/v2/Deals"
 
 VEHICLE_MODULE_URL = "https://www.zohoapis.ca/crm/v2/Vehicles"
-TEMP_DIR = "/tmp"
 
 def attach_release_form(token: str, zoho_id: str, attachment_urls: list, module: str):
     """Attach release forms synchronously."""
+    # Define the URL for the attachment based on the module
+    logger.info(f"token is {token}")
     if module == "Deals":
         attachment_url = f"{MODULE_URL}/{zoho_id}/Attachments"
     elif module == "Vehicles":
@@ -20,40 +21,39 @@ def attach_release_form(token: str, zoho_id: str, attachment_urls: list, module:
     else:
         raise ValueError("Invalid module specified")
 
+    # Set the headers for authorization
     headers = {"Authorization": f"Zoho-oauthtoken {token}"}
 
+    # Loop through the list of attachment URLs
     for release_form in attachment_urls:
-        file_name = os.path.basename(release_form)
-        local_file_path = os.path.join(TEMP_DIR, file_name)
-
-        # Download the file if it doesn't exist
-        if not os.path.exists(local_file_path):
-            download_file(release_form, local_file_path)
-
-        with open(local_file_path, "rb") as file:
-            files = {
-                "file": (file_name, file, "application/octet-stream")
+        try:
+            # Create the form data for the request
+            data = {
+                "attachmentUrl": release_form  # Passing the URL as file URL to Zoho API
             }
-            response = requests.post(attachment_url, headers=headers, files=files)
+
+            # Send the request to attach the URL as an attachment
+            response = requests.post(attachment_url, headers=headers, data=data)
+
+            # Check the response
             if response.status_code == 200:
-                logger.info(f"File {file_name} attached successfully to {module} {zoho_id}")
+                logger.info(f"URL {release_form} attached successfully to {module} {zoho_id}")
             else:
-                logger.error(f"Failed to attach file {file_name}: {response.text}")
+                logger.error(f"Failed to attach URL {release_form}: {response.text}")
+        except Exception as e:
+            logger.error(f"Error while attaching URL {release_form}: {str(e)}")
 
-        # Clean up local file
-        if os.path.exists(local_file_path):
-            os.remove(local_file_path)
 
-def download_file(url: str, destination_path: str):
-    """Download a file synchronously from a public URL."""
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        with open(destination_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
-        logger.info(f"Downloaded file to: {destination_path}")
-    else:
-        raise Exception(f"Failed to download file from {url}: {response.status_code}")
+# def download_file(url: str, destination_path: str):
+#     """Download a file synchronously from a public URL."""
+#     response = requests.get(url, stream=True)
+#     if response.status_code == 200:
+#         with open(destination_path, "wb") as file:
+#             for chunk in response.iter_content(chunk_size=8192):
+#                 file.write(chunk)
+#         logger.info(f"Downloaded file to: {destination_path}")
+#     else:
+#         raise Exception(f"Failed to download file from {url}: {response.status_code}")
 
 def add_order(order_data: dict, token: str, release_form_list: list, vehicles: list) -> dict:
     """Add a transport order and attach release forms synchronously."""
@@ -72,7 +72,7 @@ def add_order(order_data: dict, token: str, release_form_list: list, vehicles: l
             logger.info(f"Successfully added Order Job: {order_id}")
 
             # Add vehicles
-            vehicle_response = add_vehicles(token, vehicles, order_id, order_data['PickupLocation'], order_data['Drop_off_Location'])
+            vehicle_response = add_vehicles(token, vehicles, order_id, order_data['PickupLocation'], order_data['Drop_off_Location'],)
 
             # Attach release forms
             attach_release_form(token, order_id, release_form_list, module="Deals")
@@ -116,6 +116,7 @@ def add_vehicles(token: str, vehicles: list, order_id: str, pickup_location: str
 
     for i, resp in enumerate(response.json()["data"]):
         vehicles[i]["Vehicle_ID"] = resp["details"]["id"]
+        attach_release_form(token, resp["details"]["id"], [vehicles[i]["ReleaseForm"]], module="Vehicles") ## attach release form to vehicle
         del vehicles[i]["Layout"]
         del vehicles[i]["Source"]
 

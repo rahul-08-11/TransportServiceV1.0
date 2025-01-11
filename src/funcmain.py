@@ -7,7 +7,7 @@ import json
 import pandas as pd
 import os
 from src.dbConnector import *
-from sqlalchemy import and_ ,func as sqlfunc
+from sqlalchemy import and_ ,text, func as sqlfunc
 from sqlalchemy.exc import IntegrityError
 # # # Load Env Variables
 from dotenv import load_dotenv
@@ -49,83 +49,73 @@ class TransportOrders:
 
         return release_forms
     
-    def _create_order_id(self,session) -> int:
-        # Query to fetch the maximum OrderID
-        last_order = session.query(sqlfunc.max(OrdersDB.OrderID)).scalar()
-        last_id = last_order if last_order is not None else None
+    async def _create_order(self, body: json) -> dict:
         try:
-            result = int(last_id.replace("#",""))
-            logger.info(result)
-        except Exception as e:
-            result = None
-
-        sorder_id = 10001
-
-        if result == None:
-            order_id = sorder_id
-        else:
-            order_id = 1 + result
-
-        return order_id
-            
-    
-
-    async def _create_order(self, body:json) -> dict:
-        try:
-            
             token = token_instance.get_access_token()
             release_forms = self.parse_request(body)
 
             with DatabaseConnection(connection_string=os.getenv("SQL_CONN_STR")) as session:
-                # fetch the order ID for new request
-                order_id = self._create_order_id(session)
-                order_id = f"#{order_id}"
-                OrderObj = Order(
-                    Deal_Name=order_id,
-                    Customer_id = body.get("Customer_id",""),
-                    Customer_Name =body.get("Customer_name",""),
-                    Drop_off_Location = body.get("Dropoff_Location",""),
-                    PickupLocation = body.get("Pickup_Location",""),
-                    special_instructon = body.get("Special_Instruction",""),
-                    Tax_Province=extract_tax_province(body.get("Pickup_Location","")),
-                )
-
-                # Create the order in zoho crm
-                data = OrderApi.add_order(dict(OrderObj), token, release_forms, body.get("Vehicles",""))
                 try:
-                    job_id = data['zoho_order_id']
+    
+                    session.begin()
 
-                    dbobj = OrdersDB(
-                        OrderID=order_id,  # Set the OrderID
-                        TransportRequestID=job_id,  # Add a comma here
-                        CustomerID=OrderObj.Customer_id,
-                        CustomerName=OrderObj.Customer_Name,
-                        Status="Pending",
-                        PickupLocation=OrderObj.PickupLocation,
-                        DropoffLocation=OrderObj.Drop_off_Location,
+                    for vehicle in body.get("Vehicles", ""):
+                        vehicle["ReleaseForm"] = manage_prv(vehicle["ReleaseForm"])
 
+                    OrderObj = OrdersDB(
+                        CustomerID=body.get("Customer_id", ""),
+                        CustomerName=body.get("Customer_name", ""),
+                        DropoffLocation=body.get("Dropoff_Location", ""),
+                        PickupLocation=body.get("Pickup_Location", ""),
+                        Status="Pending"
                     )
-                    session.add(dbobj)
-                    session.commit()
-                    logger.info("---------Order added to DB-------------")
+                    session.add(OrderObj)
+                    session.flush()  # Fetch the generated OrderID
+                    order_id = OrderObj.OrderID  # Auto-incremented ID is now available
+    
+                    print(f"Order ID: {order_id}")
+                    # Now create the order in Zoho CRM using the same order ID
+                    OrderObjCRM = Order(
+                        Deal_Name=f"#{order_id}",
+                        Customer_id=body.get("Customer_id", ""),
+                        Customer_Name=body.get("Customer_name", ""),
+                        Drop_off_Location=body.get("Dropoff_Location", ""),
+                        PickupLocation=body.get("Pickup_Location", ""),
+                        special_instructon=body.get("Special_Instruction", ""),
+                        Tax_Province=extract_tax_province(body.get("Pickup_Location", "")),
+                    )
+
+
+                    data = OrderApi.add_order(dict(OrderObjCRM), token, release_forms, body.get("Vehicles", ""))
+                    try:
+                        job_id = data['zoho_order_id']
+
+                        # Add TransportRequestID and other info in the DB
+                        OrderObj.TransportRequestID = job_id
+                        session.commit()
+                    
+                        logger.info("Order added to DB")
+                    except Exception as e:
+                        logger.error(f"Error adding order to DB after Zoho CRM: {e}")
+                        session.rollback()
+                        return {"error": str(e), "message": "Error creating order in Zoho CRM", "code": 500}
+
                     slack_msg = f"""🚚 *New Transport Request* \n *Details:* \n - Order ID: `{order_id}` \n - Transport Volume: `{len(body.get("Vehicles",""))}` vehicles \n - Pickup Location: `{OrderObj.PickupLocation}` \n - Drop-off Location: `{OrderObj.Drop_off_Location}` \n <https://crm.zohocloud.ca/crm/org110000402423/tab/Potentials/{job_id}|View Order Details>
                     """
                     send_message_to_channel(os.getenv("BOT_TOKEN"),os.getenv("CHANNEL_ID"),slack_msg)
 
                     return data
-            
+
                 except Exception as e:
-                    logger.error(f"SQL DB Error: {e}")
+                    logger.error(f"Error adding order to DB after Zoho CRM: {e}")
+                    session.rollback()
+                    return {"error": str(e), "message": "Error creating order in Zoho CRM", "code": 500}
 
         except Exception as e:
-            logger.error(f"Func Main  Error: {e}")
+            logger.error(f"Error creating order: {e}")
+            return {"error": str(e), "message": "Error creating order", "code": 500}
 
-            return {
-                "error": str(e),
-                "message": "Error Creating Order",
-                "code": 500
-            }
-        
+            
     
 
 
