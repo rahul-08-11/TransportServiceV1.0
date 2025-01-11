@@ -59,9 +59,6 @@ class TransportOrders:
     
                     session.begin()
 
-                    for vehicle in body.get("Vehicles", ""):
-                        vehicle["ReleaseForm"] = manage_prv(vehicle["ReleaseForm"])
-
                     OrderObj = OrdersDB(
                         CustomerID=body.get("Customer_id", ""),
                         CustomerName=body.get("Customer_name", ""),
